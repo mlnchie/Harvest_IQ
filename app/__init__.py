@@ -78,6 +78,7 @@ def create_app(config=DevelopmentConfig):
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
 
+
     # ─────────────────────────────────────────
     # AUTO CREATE DATABASE
     # ─────────────────────────────────────────

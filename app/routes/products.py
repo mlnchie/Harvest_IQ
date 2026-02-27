@@ -16,17 +16,29 @@ products_bp = Blueprint(
 # ─────────────────────────────
 @products_bp.route("/")
 def list_products():
+    """
+    Displays the marketplace. Uses pagination to support the 
+    'products.pages' logic in the HTML template.
+    """
+    # Get current page from URL parameters (?page=1)
+    page = request.args.get('page', 1, type=int)
+    per_page = 9  # Adjust this number to show more/less per page
 
-    products = Product.query.filter_by(
+    # FIXED: Replaced .all() with .paginate()
+    products_pagination = Product.query.filter_by(
         status="approved",
         is_available=True
-    ).order_by(Product.created_at.desc()).all()
+    ).order_by(Product.created_at.desc()).paginate(
+        page=page, 
+        per_page=per_page, 
+        error_out=False
+    )
 
     categories = Category.query.all()
 
     return render_template(
         "products/list.html",
-        products=products,
+        products=products_pagination,  # This object now has the .pages attribute
         categories=categories
     )
 
@@ -36,7 +48,6 @@ def list_products():
 # ─────────────────────────────
 @products_bp.route("/<int:product_id>")
 def product_detail(product_id):
-
     product = Product.query.get_or_404(product_id)
     return render_template("products/detail.html", product=product)
 
@@ -47,7 +58,6 @@ def product_detail(product_id):
 @products_bp.route("/add", methods=["GET", "POST"])
 @login_required
 def add_product():
-
     if current_user.role != "farmer":
         flash("Only farmers can add products.", "danger")
         return redirect(url_for("users.dashboard"))
@@ -55,7 +65,6 @@ def add_product():
     categories = Category.query.all()
 
     if request.method == "POST":
-
         image_file = request.files.get("image")
         image_path = save_image(image_file) if image_file else "default_product.jpg"
 
@@ -86,12 +95,11 @@ def add_product():
 
 
 # ─────────────────────────────
-# EDIT PRODUCT ✅ FIX
+# EDIT PRODUCT
 # ─────────────────────────────
 @products_bp.route("/edit/<int:product_id>", methods=["GET", "POST"])
 @login_required
 def edit_product(product_id):
-
     product = Product.query.get_or_404(product_id)
 
     if product.farmer_id != current_user.id:
@@ -101,7 +109,6 @@ def edit_product(product_id):
     categories = Category.query.all()
 
     if request.method == "POST":
-
         product.name = request.form.get("name")
         product.description = request.form.get("description")
         product.price = float(request.form.get("price", 0))
@@ -121,12 +128,11 @@ def edit_product(product_id):
 
 
 # ─────────────────────────────
-# DELETE PRODUCT ✅ FIX
+# DELETE PRODUCT
 # ─────────────────────────────
 @products_bp.route("/delete/<int:product_id>", methods=["POST"])
 @login_required
 def delete_product(product_id):
-
     product = Product.query.get_or_404(product_id)
 
     if product.farmer_id != current_user.id:

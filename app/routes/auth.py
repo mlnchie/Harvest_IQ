@@ -53,6 +53,9 @@ def login():
             flash("Maling username o password.", "danger")
 
     return render_template("auth/login.html")
+            
+
+    
 
 
 # ─────────────────────────────────────────────
@@ -75,7 +78,7 @@ def register():
     confirm = request.form.get("confirm_password", "")
 
     if password != confirm:
-        flash("Hindi magtugma ang password.", "danger")
+       # flash("Hindi magtugma ang password.", "danger")
         return render_template("auth/register.html")
 
     # ───────── BUYER ─────────

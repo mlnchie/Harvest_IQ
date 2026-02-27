@@ -4,119 +4,100 @@
 {% block content %}
 <div class="container py-4">
 
-  <h2 class="fw-bold mb-2">🛠 Admin Dashboard</h2>
-  <p class="text-muted mb-4">
-    Approve farmer weighed products
-  </p>
+  <h2 class="fw-bold mb-1"><i class="fas fa-tools"></i> Admin Dashboard</h2>
+  <p class="text-muted mb-4">Approve farmer weighed products</p>
 
-  <div class="card shadow-sm border-0">
-
-    <div class="card-header fw-bold">
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header fw-bold bg-white border-bottom">
       Pending Weigh Logs
     </div>
-
     <div class="card-body p-0">
-
       {% if logs %}
       <div class="table-responsive">
-
-      <table class="table mb-0 table-hover align-middle">
-
-        <thead class="table-light">
-          <tr>
-            <th>Farmer</th>
-            <th>Contact</th>
-            <th>Location</th>
-            <th>Product</th>
-            <th>Weight</th>
-            <th>Price/kg</th>
-            <th>Total Value</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-
-        <tbody>
-        {% for log in logs %}
-          <tr>
-
-            <!-- FARMER INFO -->
-            <td>
-              <div class="fw-semibold">
-                {{ log.farmer_name }}
-              </div>
-              <small class="text-muted">
-                ID: {{ log.farmer_id }}
-              </small>
-            </td>
-
-            <!-- CONTACT -->
-            <td>
-              {{ log.phone }}
-            </td>
-
-            <!-- LOCATION -->
-            <td>
-              {{ log.barangay }},
-              {{ log.city }},
-              {{ log.province }}
-            </td>
-
-            <!-- PRODUCT -->
-            <td class="fw-semibold">
-              {{ log.product }}
-            </td>
-
-            <!-- WEIGHT -->
-            <td class="fw-bold text-success">
-              {{ log.weight }} kg
-            </td>
-
-            <!-- PRICE -->
-            <td>
-              ₱{{ "%.2f"|format(log.suggested_price or 0) }}
-            </td>
-
-            <!-- TOTAL -->
-            <td class="fw-bold">
-              ₱{{
-                "%.2f"|format(
-                  (log.weight or 0) *
-                  (log.suggested_price or 0)
-                )
-              }}
-            </td>
-
-            <!-- ACTION -->
-            <td>
-              <a href="{{ url_for('admin.approve_log', log_id=log.id) }}"
-                 class="btn btn-sm btn-success">
-                 Approve
-              </a>
-            </td>
-
-          </tr>
-        {% endfor %}
-        </tbody>
-
-      </table>
+        <table class="table mb-0 align-middle">
+          <thead>
+            <tr>
+              <th class="ps-3">Farmer</th>
+              <th>Product</th>
+              <th>Weight</th>
+              <th>Price</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in logs %}
+            <tr>
+              <td class="ps-3">{{ log.farmer_name }}</td>
+              <td>{{ log.product }}</td>
+              <td>{{ log.weight }} kg</td>
+              <td>₱{{ "%.2f"|format(log.suggested_price or 0) }}</td>
+              <td class="text-center">
+                <a href="{{ url_for('admin.approve_log', log_id=log.id) }}" class="btn btn-sm btn-success">
+                  Approve
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
-
       {% else %}
-      <div class="text-center py-4 text-muted">
+      <div class="text-center py-5 text-muted">
         No pending weigh logs.
       </div>
       {% endif %}
+    </div>
+  </div>
 
+  <div class="card shadow-sm border-0">
+    <div class="card-header fw-bold bg-white border-bottom">
+      <i class="far fa-file-alt"></i> Pending Orders
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">Order ID</th>
+              <th>Buyer</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in pending_orders %}
+            <tr>
+              <td class="ps-3">#{{ order.id }}</td>
+              <td>{{ order.buyer.username }}</td>
+              <td>₱{{ "%.2f"|format(order.total_amount) }}</td>
+              <td>
+                <span class="badge {% if order.status == 'pending_admin' %}bg-warning text-dark{% else %}bg-info{% endif %}">
+                  {{ order.status | replace('_', ' ') | title }}
+                </span>
+              </td>
+              <td class="text-center">
+                {% if order.status == 'pending_admin' %}
+                <form action="{{ url_for('users.admin_accept_order', order_id=order.id) }}" method="POST">
+                  <button type="submit" class="btn btn-sm btn-primary">Accept</button>
+                </form>
+                {% else %}
+                <button class="btn btn-sm btn-light border" disabled>Accepted</button>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="5" class="text-center py-5 text-muted">
+                No orders currently in the system.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-setInterval(function(){
-  location.reload();
-}, 5000);
-</script>
 {% endblock %}

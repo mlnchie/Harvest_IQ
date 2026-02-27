@@ -1,176 +1,188 @@
 {% extends "base.html" %}
-{% block title %}Buyer Dashboard{% endblock %}
+{% block title %}Buyer Dashboard | Harvest IQ{% endblock %}
 
 {% block content %}
 <div class="container py-4">
 
-  <!-- HEADER -->
-  <h2 class="fw-bold mb-1">🛒 Buyer Dashboard</h2>
-
-  <p class="text-muted mb-4">
-    Maligayang pagbabalik,
-    {{ current_user.full_name or current_user.username }}!
-  </p>
-
-  <!-- AI SEARCH -->
-  <div class="card shadow-sm border-0 mb-4">
-    <div class="card-body">
-
-      <h5 class="fw-bold mb-3">
-        🤖 AI Paghahanap ng Produkto
-      </h5>
-
-      <!-- ✅ Added id -->
-      <form id="searchForm">
-        <div class="input-group">
-
-          <input type="text"
-                 name="q"
-                 id="searchInput"
-                 class="form-control"
-                 placeholder="Maghanap hal. kamatis..."
-                 required>
-
-          <button class="btn btn-success">
-            🔍 Maghanap
-          </button>
-
-        </div>
-      </form>
-
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">🛒 Buyer Dashboard</h2>
+      <p class="text-muted mb-0">
+        Welcome Back, <strong>{{ current_user.full_name or current_user.username }}</strong>!
+      </p>
     </div>
+    <a href="{{ url_for('cart.view_cart') }}" class="btn btn-outline-success position-relative shadow-sm">
+      <i class="fas fa-shopping-cart"></i> My Cart
+      {% if cart_count and cart_count > 0 %}
+      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+        {{ cart_count }}
+      </span>
+      {% endif %}
+    </a>
   </div>
 
-  <!-- ✅ SEARCH RESULTS (ADDED, hidden by default) -->
-  <div id="searchResults" class="row g-3 mb-4" style="display:none;"></div>
-
-  <!-- PRODUCTS -->
-  <h4 class="fw-bold mb-3">🌾 Available Products</h4>
-
-  <!-- ✅ Wrapped default products -->
-  <div id="defaultProducts" class="row g-3">
-
-    {% for product in products %}
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <a href="#orders-section" class="text-decoration-none">
+        <div class="card bg-success text-white border-0 shadow-sm h-100 stats-card">
+          <div class="card-body">
+            <h6 class="small text-uppercase opacity-75">Active Orders</h6>
+            <h3 class="fw-bold mb-0">{{ orders|length }}</h3>
+            <p class="mb-0 small mt-2">View status details →</p>
+          </div>
+        </div>
+      </a>
+    </div>
 
     <div class="col-md-4">
-      <div class="card shadow-sm h-100">
-
-        <img src="{{ url_for('static',
-              filename='uploads/' + (product.image or 'default_product.jpg')) }}"
-             class="card-img-top"
-             style="height:200px; object-fit:cover;">
-
+      <div class="card bg-primary text-white border-0 shadow-sm h-100">
         <div class="card-body">
-
-          <h5 class="card-title">
-            {{ product.name }}
-          </h5>
-
-          <p class="mb-1">
-            <strong>Magsasaka:</strong>
-            {{ product.farmer.full_name or product.farmer.username }}
-          </p>
-
-          <p class="mb-1">
-            <strong>Lugar:</strong>
-            {{ product.location }}
-          </p>
-
-          <p class="mb-1">
-            <strong>Stock:</strong>
-            {{ product.stock_quantity }} kg
-          </p>
-
-          <h6 class="text-success fw-bold">
-            ₱{{ product.price }}/kg
-          </h6>
-
-          <a href="{{ url_for('products.product_detail',
-                               product_id=product.id) }}"
-             class="btn btn-success btn-sm mt-2 w-100">
-             Tingnan ang Produkto
-          </a>
-
+          <h6 class="small text-uppercase opacity-75">Account Status</h6>
+          <h3 class="fw-bold mb-0">{{ current_user.role|capitalize }}</h3>
+          <p class="mb-0 small mt-2">Verified Buyer Account</p>
         </div>
       </div>
     </div>
 
-    {% else %}
-
-    <div class="col-12 text-center text-muted py-4">
-      Wala pang available na produkto.
+    <div class="col-md-4">
+      <a href="{{ url_for('cart.view_cart') }}" class="text-decoration-none">
+        <div class="card bg-warning text-dark border-0 shadow-sm h-100">
+          <div class="card-body">
+            <h6 class="small text-uppercase opacity-75">My Cart 🛒</h6>
+            <h3 class="fw-bold mb-0">{{ cart_count or 0 }} Item(s)</h3>
+            <p class="mb-0 small mt-2 fw-bold text-decoration-underline">Proceed to Checkout →</p>
+          </div>
+        </div>
+      </a>
     </div>
+  </div>
 
+  <div class="card shadow-sm border-0 mb-5 bg-light">
+    <div class="card-body p-4">
+      <h5 class="fw-bold mb-3">🤖 AI Search Products</h5>
+      <form id="searchForm">
+        <div class="input-group input-group-lg">
+          <input type="text" name="q" id="searchInput" class="form-control border-0 shadow-none" 
+                 placeholder="Search e.g. fresh tomatoes, cheap rice..." required>
+          <button class="btn btn-success px-4">
+            <i class="fas fa-search"></i> Search
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="searchResultsSection" style="display:none;" class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4 class="fw-bold mb-0">🔍 Search Results</h4>
+      <button class="btn btn-sm btn-link text-muted" onclick="location.reload()">Clear Search</button>
+    </div>
+    <div id="searchResults" class="row g-3"></div>
+    <hr class="mt-5">
+  </div>
+
+  <div id="orders-section" class="mb-5">
+    <h4 class="fw-bold mb-3">📦 My Active Orders</h4>
+    <div class="card shadow-sm border-0 overflow-hidden">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light text-muted small text-uppercase">
+            <tr>
+              <th class="ps-4">Order ID</th>
+              <th>Product</th>
+              <th>Total Weight</th>
+              <th>Grand Total</th>
+              <th>Status</th>
+              <th class="pe-4">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in orders %}
+            <tr>
+              <td class="ps-4 fw-bold">#{{ order.id }}</td>
+              
+              <td>
+                {% if order.items %}
+                  {{ order.items[0].product.name }}{% if order.items|length > 1 %}... (+{{ order.items|length - 1 }}){% endif %}
+                {% else %}
+                  Harvest Item
+                {% endif %}
+              </td>
+
+              <td>{% if order.items %}{{ order.items|sum(attribute='quantity') }} kg{% else %}--{% endif %}</td>
+
+              <td class="fw-bold text-success">₱{{ "%.2f"|format(order.total_amount or 0) }}</td>
+              
+              <td>
+                {% if order.status == 'pending_admin' %}
+                  <span class="badge bg-warning text-dark px-3 rounded-pill">🔍 Awaiting Admin</span>
+                {% elif order.status == 'pending' %}
+                  <span class="badge bg-info text-white px-3 rounded-pill">✅ Admin Verified</span>
+                {% elif order.status == 'processing' %}
+                  <span class="badge bg-primary text-white px-3 rounded-pill">🚜 Farmer Preparing</span>
+                {% elif order.status == 'shipped' %}
+                  <span class="badge bg-dark text-white px-3 rounded-pill">🚚 In Transit</span>
+                {% elif order.status == 'completed' %}
+                  <span class="badge bg-success text-white px-3 rounded-pill">🏁 Completed</span>
+                {% else %}
+                  <span class="badge bg-secondary text-white px-3 rounded-pill">{{ order.status }}</span>
+                {% endif %}
+              </td>
+              
+              <td class="pe-4 small text-muted">
+                {{ order.created_at.strftime('%b %d, %Y') if order.created_at else "N/A" }}
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="6" class="text-center py-5 text-muted">
+                <i class="fas fa-box-open fa-3x mb-3 opacity-25"></i>
+                <p class="mb-0">You haven't placed any orders yet.</p>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <h4 class="fw-bold mb-3">🌾 Fresh from the Farm</h4>
+  <div id="defaultProducts" class="row g-3">
+    {% for product in products %}
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100 border-0 product-card">
+        <img src="{{ url_for('static', filename='uploads/' + (product.image or 'default_product.jpg')) }}" 
+             class="card-img-top" 
+             style="height:180px; object-fit:cover;"
+             onerror="this.src='https://placehold.co/400x200?text=No+Image'">
+        <div class="card-body">
+          <h5 class="card-title fw-bold text-dark">{{ product.name }}</h5>
+          <p class="mb-1 small text-muted"><strong>Farmer:</strong> {{ product.farmer.username }}</p>
+          <p class="mb-1 small text-muted"><strong>Location:</strong> {{ product.location }}</p>
+          <h5 class="text-success fw-bold">₱{{ "%.2f"|format(product.price) }}/kg</h5>
+          
+          <div class="d-flex gap-2 mt-3">
+            <a href="{{ url_for('products.product_detail', product_id=product.id) }}" class="btn btn-outline-success btn-sm flex-grow-1">
+              Details
+            </a>
+            <form action="{{ url_for('cart.add_to_cart', product_id=product.id) }}" method="POST" class="flex-grow-1">
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="btn btn-success btn-sm w-100">
+                    + <i class="fas fa-cart-plus"></i> Add
+                </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
     {% endfor %}
-
   </div>
 
 </div>
 
-
-<!-- ✅ AJAX SEARCH SCRIPT (ADDED) -->
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-
-  const form = document.getElementById("searchForm");
-  const input = document.getElementById("searchInput");
-  const resultsDiv = document.getElementById("searchResults");
-  const defaultDiv = document.getElementById("defaultProducts");
-
-  form.addEventListener("submit", async function (e) {
-    e.preventDefault();
-
-    const query = input.value.trim();
-    if (!query) return;
-
-    resultsDiv.style.display = "flex";
-    defaultDiv.style.display = "none";
-
-    resultsDiv.innerHTML = "<p>Searching...</p>";
-
-    try {
-
-      // ✅ FIXED BACKTICKS
-      const res = await fetch(`/api/search-products?q=${encodeURIComponent(query)}`);
-      const data = await res.json();
-
-      resultsDiv.innerHTML = "";
-
-      if (data.length === 0) {
-        resultsDiv.innerHTML =
-          "<div class='col-12 text-muted'>Walang nahanap.</div>";
-        return;
-      }
-
-      data.forEach(product => {
-        resultsDiv.innerHTML += `
-          <div class="col-md-4">
-            <div class="card shadow-sm h-100">
-              <div class="card-body">
-
-                <h5>${product.name}</h5>
-
-                <p><strong>Magsasaka:</strong> ${product.farmer}</p>
-                <p><strong>Lugar:</strong> ${product.location}</p>
-                <p><strong>Stock:</strong> ${product.stock} kg</p>
-
-                <h6 class="text-success fw-bold">
-                  ₱${product.price}/kg
-                </h6>
-
-              </div>
-            </div>
-          </div>
-        `;
-      });
-
-    } catch (err) {
-      resultsDiv.innerHTML =
-        "<div class='col-12 text-danger'>Search failed.</div>";
-    }
-
-  });
-
-});
-</script>
+<style>
+  .stats-card:hover { transform: translateY(-3px); transition: 0.3s; }
+  .product-card:hover { transform: scale(1.02); transition: 0.2s; box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+</style>
 {% endblock %}

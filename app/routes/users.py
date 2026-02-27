@@ -1,8 +1,11 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, session
+from flask import Blueprint, render_template, redirect, url_for, flash, session, request
 from flask_login import login_required, current_user
 from app.models.product import Product
-from app.models.order import Order
+from app.models.order import Order, OrderItem
+from app.models.weigh_logs import WeighLog
 from app import db
+from datetime import datetime
+from sqlalchemy.orm import joinedload
 
 # try import device model safely
 try:
@@ -12,132 +15,153 @@ except Exception:
 
 users_bp = Blueprint("users", __name__)
 
-
 # ============================================================
-# 🧭 USER DASHBOARD
+# 🧭 USER DASHBOARD (Role-Based)
 # ============================================================
 @users_bp.route("/dashboard")
 @login_required
 def dashboard():
-
-    print("DASHBOARD ROLE:", current_user.role)
-
-    # ─────────────────────────────
-    # BUYER ORDERS
-    # ─────────────────────────────
-    orders = Order.query.filter_by(
-        buyer_id=current_user.id
-    ).order_by(
-        Order.created_at.desc()
-    ).all()
-
-    # ─────────────────────────────
-    # APPROVED PRODUCTS (BUYER VIEW)
-    # ─────────────────────────────
+    cart_count = len(session.get('cart', {}))
+    
+    # APPROVED PRODUCTS (Marketplace Preview for Buyers)
     products = Product.query.filter_by(
         status="approved",
         is_available=True
-    ).order_by(
-        Product.created_at.desc()
-    ).limit(6).all()
+    ).order_by(Product.created_at.desc()).limit(6).all()
 
-    print("AVAILABLE PRODUCTS COUNT:", len(products))
+    # 1. ADMIN REDIRECT
+    if current_user.role == "admin":
+        return redirect(url_for("admin.dashboard"))
 
-    # ─────────────────────────────
-    # FARMER OWN PRODUCTS
-    # ─────────────────────────────
-    farmer_products = []
-    total_revenue = 0
-
+    # 2. 👨‍🌾 FARMER LOGIC
     if current_user.role == "farmer":
+        # JOIN Bridge: Order -> OrderItem -> Product
+        # This filters for orders containing items owned by this specific farmer
+        # Orders only appear once the Admin moves status to 'pending'
+        farmer_orders = Order.query.join(OrderItem).join(Product).filter(
+            Product.farmer_id == current_user.id,
+            Order.status.in_(["pending", "processing", "shipped", "completed"])
+        ).options(joinedload(Order.items)).order_by(Order.created_at.desc()).distinct().all()
 
-        farmer_products = Product.query.filter_by(
-            farmer_id=current_user.id
-        ).order_by(
-            Product.created_at.desc()
-        ).all()
+        # Farmer's own Inventory and Weighing History
+        farmer_products = Product.query.filter_by(farmer_id=current_user.id).all()
+        weigh_logs = WeighLog.query.filter_by(farmer_id=current_user.id).order_by(WeighLog.created_at.desc()).all()
 
-        print("FARMER PRODUCTS COUNT:", len(farmer_products))
+        # Compute Total Revenue (Current Stock Value)
+        total_revenue = sum((p.stock_quantity or 0) * (p.price or 0) for p in farmer_products)
 
-        # COMPUTE TOTAL REVENUE
-        for p in farmer_products:
-            stock = p.stock_quantity or 0
-            price = p.price or 0
-            total_revenue += stock * price
-
-    # ─────────────────────────────
-    # ROLE-BASED TEMPLATE
-    # ─────────────────────────────
-    if current_user.role == "farmer":
         return render_template(
             "dashboard/farmer.html",
-            orders=orders,
+            orders=farmer_orders,
             products=products,
             farmer_products=farmer_products,
-            total_revenue=total_revenue
+            weigh_logs=weigh_logs,
+            total_revenue=total_revenue,
+            cart_count=cart_count
         )
 
+    # 3. 🛒 BUYER LOGIC
+    # Buyers see all their orders regardless of internal status
+    orders = Order.query.filter_by(buyer_id=current_user.id).order_by(Order.created_at.desc()).all()
+    
     return render_template(
         "dashboard/buyer.html",
         orders=orders,
-        products=products
+        products=products,
+        cart_count=cart_count
     )
 
-
 # ============================================================
-# 🚀 START WEIGH (MULTI-FARMER SAFE)
+# 🛡️ ADMIN ACTION: VERIFY & ACCEPT ORDER
 # ============================================================
-@users_bp.route("/start-weigh", methods=["POST"])
+@users_bp.route("/admin/accept-order/<int:order_id>", methods=["POST"])
 @login_required
-def start_weigh():
+def admin_accept_order(order_id):
+    """Admin verifies order; changes status to 'pending' to make it visible to Farmer"""
+    if current_user.role != "admin":
+        flash("Unauthorized.", "danger")
+        return redirect(url_for("main.index"))
+    
+    order = Order.query.get_or_404(order_id)
+    order.status = "pending" 
+    order.admin_approved_at = datetime.utcnow()
+    
+    db.session.commit()
+    flash(f"Order #{order.id} verified and sent to Farmer.", "success")
+    return redirect(url_for("admin.dashboard"))
 
+# ============================================================
+# 👨‍🌾 FARMER ACTION: PREPARE ORDER (PACKING)
+# ============================================================
+@users_bp.route("/farmer/prepare-order/<int:order_id>", methods=["POST"])
+@login_required
+def farmer_prepare_order(order_id):
     if current_user.role != "farmer":
         flash("Unauthorized.", "danger")
         return redirect(url_for("users.dashboard"))
 
-    print(f"🔥 START requested by farmer {current_user.id}")
+    order = Order.query.get_or_404(order_id)
+    
+    # Status moves to processing while Farmer packs the items
+    order.status = "processing"
+    order.processed_at = datetime.utcnow()
+    
+    db.session.commit()
+    flash(f"Order #{order.id} is now being prepared.", "success")
+    return redirect(url_for("users.dashboard"))
 
-    # ✅ remember which farmer initiated weighing
+# ============================================================
+# 🚚 UPDATE STATUS: SHIPPED / COMPLETED (DELIVERY CYCLE)
+# ============================================================
+@users_bp.route("/update-order-status/<int:order_id>/<string:status>", methods=["POST"])
+@login_required
+def update_order_status(order_id, status):
+    order = Order.query.get_or_404(order_id)
+    
+    if status == "shipped":
+        order.status = "shipped"
+        order.shipped_at = datetime.utcnow()
+    elif status == "completed":
+        order.status = "completed"
+        order.delivered_at = datetime.utcnow()
+        order.payment_status = "paid"
+
+    db.session.commit()
+    flash(f"Order #{order.id} updated to {status}.", "success")
+    return redirect(url_for("users.dashboard"))
+
+# ============================================================
+# 🚀 HARDWARE CONTROLS (WEIGHING) - RETAINED & SYNCED
+# ============================================================
+@users_bp.route("/start-weigh", methods=["POST"])
+@login_required
+def start_weigh():
+    if current_user.role != "farmer":
+        flash("Unauthorized.", "danger")
+        return redirect(url_for("users.dashboard"))
+
+    # Track which farmer is currently using the physical hardware
     session["active_farmer_id"] = current_user.id
-    print("ACTIVE FARMER SET:", session.get("active_farmer_id"))
-
-    # ✅ trigger the SINGLE physical scale (device id = 3)
+    
     if Device:
         device = Device.query.get(3)
-
         if device:
             device.weighing = True
             db.session.commit()
-            print("✅ Device weighing set to TRUE")
-        else:
-            print("❌ Device ID 3 not found")
-
-    else:
-        print("⚠️ Device model missing — skipping device trigger")
-
+    
     flash("Start command sent to weighing hardware.", "success")
     return redirect(url_for("users.dashboard"))
 
-
-# ============================================================
-# 🛑 STOP WEIGH (optional but recommended)
-# ============================================================
 @users_bp.route("/stop-weigh", methods=["POST"])
 @login_required
 def stop_weigh():
-
-    print(f"🛑 STOP requested by farmer {current_user.id}")
-
-    # reset active farmer session
     session.pop("active_farmer_id", None)
-
+    
     if Device:
         device = Device.query.get(3)
-
         if device:
             device.weighing = False
             db.session.commit()
-            print("🛑 Device weighing set to FALSE")
-
+            
     flash("Weighing stopped.", "warning")
     return redirect(url_for("users.dashboard"))
