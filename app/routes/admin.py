@@ -12,7 +12,7 @@ admin_bp = Blueprint(
 )
 
 # ──────────────────────────────────────────────────────────
-# 🛠 ADMIN DASHBOARD
+# 🛠 ADMIN DASHBOARD (Updated to include Product Pricing)
 # ──────────────────────────────────────────────────────────
 @admin_bp.route("/dashboard")
 @login_required
@@ -22,25 +22,29 @@ def dashboard():
         flash("Access denied.", "danger")
         return redirect(url_for("main.index"))
 
-    # ⚖️ PENDING WEIGH LOGS (Top Section in your screenshot)
-    # These are products farmers have weighed that need to be approved into the shop
+    # ⚖️ PENDING WEIGH LOGS (cite: 1)
+    # Listahan ng mga timbang mula sa ESP32 na hindi pa naa-approve
     logs = WeighLog.query.filter_by(
         status="pending"
     ).order_by(
         WeighLog.created_at.desc()
     ).all()
 
-    # 📋 PENDING ORDERS (Bottom Section in your screenshot)
-    # We fetch 'pending_admin' (New), 'pending' (Accepted), and 'processing' (Farmer packing)
-    # This keeps orders on the dashboard so you can monitor the status after approval
+    # 📋 PENDING ORDERS (cite: 1)
+    # Listahan ng mga orders na kailangan ng admin verification
     pending_orders = Order.query.filter(
         Order.status.in_(["pending_admin", "pending", "processing", "shipped"])
     ).order_by(Order.created_at.desc()).all()
 
+    # 🏷️ PRODUCTS LIST (Kailangan para sa Manage Product Pricing)
+    # Dito kinukuha ang lahat ng produkto para lumabas sa pricing table sa HTML
+    products = Product.query.order_by(Product.created_at.desc()).all()
+
     return render_template(
         "dashboard/admin.html",
         logs=logs,
-        pending_orders=pending_orders
+        pending_orders=pending_orders,
+        products=products # <--- ITO ANG KRUSYAL NA DINAGDAG NATIN
     )
 
 

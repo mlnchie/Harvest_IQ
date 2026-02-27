@@ -1,132 +1,165 @@
 {% extends 'base.html' %}
-{% block title %}Order #{{ order.id }}{% endblock %}
+{% block title %}{{ product.name }}{% endblock %}
 {% block content %}
-<div class="container py-4" style="max-width:800px">
-  <div class="d-flex align-items-center gap-3 mb-4">
-    <a href="{{ url_for('orders.my_orders') }}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left"></i></a>
-    <h2 class="fw-bold mb-0">Order #{{ order.id }}</h2>
-    <span class="badge px-3 py-2
-      {% if order.status == 'delivered' %}bg-success
-      {% elif order.status == 'cancelled' %}bg-danger
-      {% elif order.status == 'pending' %}bg-warning text-dark
-      {% elif order.status == 'shipped' %}bg-info text-dark
-      {% else %}bg-primary{% endif %} ms-auto">
-      {{ order.status | title }}
-    </span>
-  </div>
+<div class="container py-4">
 
-  <!-- Order Progress -->
-  {% if order.status not in ['cancelled', 'refunded'] %}
-  <div class="card border-0 shadow-sm mb-4" style="border-radius:14px">
-    <div class="card-body py-4">
-      {% set steps = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'] %}
-      {% set current_idx = steps.index(order.status) if order.status in steps else 0 %}
-      <div class="d-flex justify-content-between align-items-center position-relative">
-        <div class="progress-line"></div>
-        {% for step in steps %}
-        {% set idx = loop.index0 %}
-        <div class="text-center" style="flex:1;position:relative;z-index:1">
-          <div class="step-dot mx-auto {{ 'active' if idx <= current_idx else '' }}">
-            {% if idx < current_idx %}✓{% elif idx == current_idx %}●{% else %}○{% endif %}
-          </div>
-          <div class="small mt-1 {{ 'text-success fw-semibold' if idx == current_idx else 'text-muted' }}">
-            {{ step | title }}
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}" class="text-success text-decoration-none">Home</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('products.list_products') }}" class="text-success text-decoration-none">Shop</a></li>
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('products.list_products') }}?category={{ product.category_id }}" class="text-success text-decoration-none">
+          {{ product.category.name if product.category else 'Uncategorized' }}
+        </a>
+      </li>
+      <li class="breadcrumb-item active">{{ product.name }}</li>
+    </ol>
+  </nav>
+
+  <div class="row g-4">
+    <div class="col-md-5">
+      <div class="card border-0 shadow-sm overflow-hidden" style="border-radius:16px">
+        <img src="{{ url_for('static', filename='images/' + (product.image or 'default_product.jpg')) }}"
+             class="img-fluid w-100" style="height:380px;object-fit:cover"
+             alt="{{ product.name }}"
+             onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&h=400&fit=crop'"/>
+      </div>
+      {% if product.is_organic %}
+      <div class="mt-2"><span class="badge bg-success px-3 py-2 fs-6">🌱 Certified Organic</span></div>
+      {% endif %}
+    </div>
+
+    <div class="col-md-7">
+      <div class="mb-1 text-muted small">{{ product.category.name if product.category else 'General' }}</div>
+      <h1 class="fw-bold mb-2">{{ product.name }}</h1>
+
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="text-warning">
+          {% set current_rating = product.average_rating|default(0)|int %}
+          {% for i in range(1, 6) %}
+            {% if i <= current_rating %}⭐
+            {% else %}<span class="text-muted">☆</span>{% endif %}
+          {% endfor %}
+        </div>
+        <span class="fw-semibold">{{ product.average_rating|default(0.0) }}</span>
+        <span class="text-muted small">({{ product.review_count|default(0) }} reviews)</span>
+        <span class="text-muted small">· {{ product.views|default(0) }} views</span>
+      </div>
+
+      <div class="price-box bg-light rounded-3 p-3 mb-3">
+        <span class="display-6 fw-bold text-success">₱{{ "%.2f"|format(product.price|default(0)) }}</span>
+        <span class="text-muted fs-5"> / {{ product.unit|default('kg') }}</span>
+      </div>
+
+      <div class="row g-2 mb-3 small">
+        <div class="col-6">
+          <div class="d-flex align-items-center gap-2 text-muted">
+            <i class="fas fa-map-marker-alt text-success"></i>
+            <span>{{ product.location or (product.farmer.region if product.farmer else 'Philippines') }}</span>
           </div>
         </div>
-        {% endfor %}
+        <div class="col-6">
+          <div class="d-flex align-items-center gap-2 text-muted">
+            <i class="fas fa-box text-success"></i>
+            <span>{{ product.stock_quantity|default(0) }} {{ product.unit|default('kg') }}s available</span>
+          </div>
+        </div>
+        {% if product.harvest_date %}
+        <div class="col-6">
+          <div class="d-flex align-items-center gap-2 text-muted">
+            <i class="fas fa-calendar text-success"></i>
+            <span>Harvested: {{ product.harvest_date.strftime('%b %d, %Y') }}</span>
+          </div>
+        </div>
+        {% endif %}
+        <div class="col-6">
+          <div class="d-flex align-items-center gap-2 text-muted">
+            <i class="fas fa-shopping-basket text-success"></i>
+            <span>Min. order: {{ product.min_order_quantity|default(1) }} {{ product.unit|default('kg') }}</span>
+          </div>
+        </div>
       </div>
+
+      {% if product.description %}
+      <div class="mb-3">
+        <h6 class="fw-bold">Description</h6>
+        <p class="text-muted">{{ product.description }}</p>
+      </div>
+      {% endif %}
+
+      {% if product.is_in_stock %}
+        {% if current_user.is_authenticated %}
+        <form action="{{ url_for('cart.add_to_cart', product_id=product.id) }}" method="POST" class="d-flex gap-2 align-items-center">
+          <div class="input-group" style="max-width:130px">
+            <button type="button" class="btn btn-outline-secondary" onclick="changeQty(-1)">−</button>
+            <input type="number" class="form-control text-center" name="quantity" id="qtyInput"
+                   value="{{ product.min_order_quantity|int }}" min="{{ product.min_order_quantity|int }}"
+                   max="{{ product.stock_quantity|int }}"/>
+            <button type="button" class="btn btn-outline-secondary" onclick="changeQty(1)">+</button>
+          </div>
+          <button type="submit" class="btn btn-success btn-lg flex-grow-1 fw-semibold">
+            <i class="fas fa-cart-plus me-2"></i>Add to Cart
+          </button>
+        </form>
+        {% else %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn-success btn-lg w-100 fw-semibold">
+          <i class="fas fa-sign-in-alt me-2"></i>Login to Buy
+        </a>
+        {% endif %}
+      {% else %}
+      <div class="alert alert-danger">
+        <i class="fas fa-times-circle me-2"></i>This product is currently out of stock.
+      </div>
+      {% endif %}
+
+      <div class="card border-0 bg-light mt-4" style="border-radius:12px">
+        <div class="card-body d-flex align-items-center gap-3">
+          <img src="https://ui-avatars.com/api/?name={{ product.farmer.full_name or product.farmer.username }}&background=2e7d32&color=fff&size=50"
+               class="rounded-circle" width="50" height="50" alt="Farmer"/>
+          <div class="flex-grow-1">
+            <div class="fw-semibold">{{ product.farmer.full_name or product.farmer.username }}</div>
+            <div class="text-muted small">
+              <i class="fas fa-map-marker-alt me-1"></i>
+              {{ product.farmer.region or 'Philippines' }}
+            </div>
+            <div class="text-warning small">
+              {% set f_rating = product.farmer.average_rating|default(0)|int %}
+              {% for _ in range(f_rating) %}⭐{% endfor %}
+              <span class="text-muted">({{ product.farmer.average_rating|default(0.0) }})</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-3 mt-3 small text-muted">
+        <span><i class="fas fa-truck text-success me-1"></i>Free delivery over ₱500</span>
+        <span><i class="fas fa-shield-alt text-success me-1"></i>Buyer Protection</span>
+        <span><i class="fas fa-undo text-success me-1"></i>Easy Returns</span>
+      </div>
+    </div>
+  </div>
+
+  {% if related %}
+  <div class="mt-5">
+    <h3 class="fw-bold mb-4">You Might Also Like</h3>
+    <div class="row g-3">
+      {% for p in related %}
+      <div class="col-6 col-md-3">
+        {% with product=p %}{% include 'products/_card.html' %}{% endwith %}
+      </div>
+      {% endfor %}
     </div>
   </div>
   {% endif %}
 
-  <div class="row g-3">
-    <!-- Items -->
-    <div class="col-md-7">
-      <div class="card border-0 shadow-sm mb-3" style="border-radius:14px">
-        <div class="card-header bg-transparent fw-bold border-0 pt-3">Order Items</div>
-        <div class="card-body pt-0">
-          {% for item in order.items %}
-          <div class="d-flex align-items-center gap-3 py-2 {{ 'border-top' if not loop.first }}">
-            <img src="{{ url_for('static', filename='images/' + item.product.image) }}"
-                 width="60" height="60" class="rounded-3" style="object-fit:cover"
-                 onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?w=60&h=60&fit=crop'"/>
-            <div class="flex-grow-1">
-              <div class="fw-semibold">{{ item.product.name }}</div>
-              <div class="text-muted small">{{ item.quantity }} {{ item.product.unit }} × ₱{{ "%.2f"|format(item.unit_price) }}</div>
-            </div>
-            <div class="fw-bold text-success">₱{{ "%.2f"|format(item.subtotal) }}</div>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-
-      <!-- Shipping Info -->
-      <div class="card border-0 shadow-sm" style="border-radius:14px">
-        <div class="card-header bg-transparent fw-bold border-0 pt-3">Delivery Information</div>
-        <div class="card-body pt-1">
-          <p class="mb-1 text-muted small"><strong>Address:</strong></p>
-          <p class="mb-2">{{ order.shipping_address }}</p>
-          <p class="mb-1 text-muted small"><strong>Payment Method:</strong> {{ order.payment_method | upper }}</p>
-          {% if order.payment_reference %}
-          <p class="mb-1 text-muted small"><strong>Reference:</strong> {{ order.payment_reference }}</p>
-          {% endif %}
-          {% if order.notes %}
-          <p class="mb-0 text-muted small"><strong>Notes:</strong> {{ order.notes }}</p>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-
-    <!-- Summary -->
-    <div class="col-md-5">
-      <div class="card border-0 shadow-sm" style="border-radius:14px">
-        <div class="card-header bg-transparent fw-bold border-0 pt-3">Order Summary</div>
-        <div class="card-body">
-          <div class="d-flex justify-content-between mb-2 small">
-            <span>Subtotal ({{ order.item_count }} items)</span>
-            <span>₱{{ "%.2f"|format(order.total_amount - order.delivery_fee) }}</span>
-          </div>
-          <div class="d-flex justify-content-between mb-2 small">
-            <span>Delivery Fee</span>
-            <span>{% if order.delivery_fee == 0 %}<span class="text-success">FREE</span>{% else %}₱{{ "%.2f"|format(order.delivery_fee) }}{% endif %}</span>
-          </div>
-          <hr/>
-          <div class="d-flex justify-content-between fw-bold fs-5">
-            <span>Total</span>
-            <span class="text-success">₱{{ "%.2f"|format(order.total_amount) }}</span>
-          </div>
-          <div class="mt-2">
-            <span class="badge {{ 'bg-success' if order.payment_status == 'paid' else 'bg-warning text-dark' }} w-100 py-2">
-              Payment: {{ order.payment_status | title }}
-            </span>
-          </div>
-          {% if order.payment_status == 'unpaid' and order.status not in ['cancelled'] %}
-          <a href="{{ url_for('payment.process_payment', order_id=order.id) }}" class="btn btn-success w-100 mt-2">
-            <i class="fas fa-credit-card me-2"></i>Pay Now
-          </a>
-          {% endif %}
-          {% if order.status in ['pending', 'confirmed'] and order.buyer_id == current_user.id %}
-          <form action="{{ url_for('orders.cancel_order', order_id=order.id) }}" method="POST"
-                onsubmit="return confirm('Cancel this order?')">
-            <button type="submit" class="btn btn-outline-danger w-100 mt-2">Cancel Order</button>
-          </form>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="card border-0 shadow-sm mt-3 p-3" style="border-radius:14px">
-        <div class="text-muted small">
-          <div><strong>Order Date:</strong> {{ order.created_at.strftime('%b %d, %Y %I:%M %p') }}</div>
-          <div class="mt-1"><strong>Last Updated:</strong> {{ order.updated_at.strftime('%b %d, %Y %I:%M %p') }}</div>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
 
-<style>
-.step-dot { width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;background:#e0e0e0;color:#999;font-weight:700; }
-.step-dot.active { background:#2e7d32;color:white; }
-.progress-line { position:absolute;top:16px;left:10%;right:10%;height:3px;background:#e0e0e0;z-index:0; }
-</style>
+<script>
+function changeQty(delta) {
+  const input = document.getElementById('qtyInput');
+  const min = parseInt(input.min) || 1;
+  const max = parseInt(input.max) || 9999;
+  input.value = Math.min(Math.max(parseInt(input.value) + delta, min), max);
+}
+</script>
 {% endblock %}

@@ -10,45 +10,56 @@
       <p class="text-muted mb-0">
         Welcome Back, <strong>{{ current_user.full_name or current_user.username }}</strong>!
       </p>
+      <small class="text-muted">
+        <i class="fas fa-map-marker-alt me-1 text-success"></i> 
+        {{ current_user.city or 'No City' }}, {{ current_user.province or 'No Province' }}
+      </small>
     </div>
-    <a href="{{ url_for('cart.view_cart') }}" class="btn btn-outline-success position-relative shadow-sm">
-      <i class="fas fa-shopping-cart"></i> My Cart
-      {% if cart_count and cart_count > 0 %}
-      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-        {{ cart_count }}
-      </span>
-      {% endif %}
-    </a>
+    
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('users.edit_profile') }}" class="btn btn-outline-primary shadow-sm border-2">
+        <i class="fas fa-user-edit me-2"></i> Edit Profile
+      </a>
+
+      <a href="{{ url_for('cart.view_cart') }}" class="btn btn-outline-success position-relative shadow-sm border-2">
+        <i class="fas fa-shopping-cart me-1"></i> My Cart
+        {% if cart_count and cart_count > 0 %}
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+          {{ cart_count }}
+        </span>
+        {% endif %}
+      </a>
+    </div>
   </div>
 
   <div class="row g-3 mb-4">
     <div class="col-md-4">
       <a href="#orders-section" class="text-decoration-none">
-        <div class="card bg-success text-white border-0 shadow-sm h-100 stats-card">
-          <div class="card-body">
-            <h6 class="small text-uppercase opacity-75">Active Orders</h6>
+        <div class="card bg-success text-white border-0 shadow-sm h-100 stats-card" style="border-radius: 12px;">
+          <div class="card-body p-4">
+            <h6 class="small text-uppercase opacity-75 fw-bold">Active Orders</h6>
             <h3 class="fw-bold mb-0">{{ orders|length }}</h3>
-            <p class="mb-0 small mt-2">View status details →</p>
+            <p class="mb-0 small mt-2">View status and tracking details →</p>
           </div>
         </div>
       </a>
     </div>
 
     <div class="col-md-4">
-      <div class="card bg-primary text-white border-0 shadow-sm h-100">
-        <div class="card-body">
-          <h6 class="small text-uppercase opacity-75">Account Status</h6>
+      <div class="card bg-primary text-white border-0 shadow-sm h-100" style="border-radius: 12px;">
+        <div class="card-body p-4">
+          <h6 class="small text-uppercase opacity-75 fw-bold">Account Status</h6>
           <h3 class="fw-bold mb-0">{{ current_user.role|capitalize }}</h3>
-          <p class="mb-0 small mt-2">Verified Buyer Account</p>
+          <p class="mb-0 small mt-2">Verified HarvestIQ Buyer Account</p>
         </div>
       </div>
     </div>
 
     <div class="col-md-4">
       <a href="{{ url_for('cart.view_cart') }}" class="text-decoration-none">
-        <div class="card bg-warning text-dark border-0 shadow-sm h-100">
-          <div class="card-body">
-            <h6 class="small text-uppercase opacity-75">My Cart 🛒</h6>
+        <div class="card bg-warning text-dark border-0 shadow-sm h-100" style="border-radius: 12px;">
+          <div class="card-body p-4">
+            <h6 class="small text-uppercase opacity-75 fw-bold">My Cart 🛒</h6>
             <h3 class="fw-bold mb-0">{{ cart_count or 0 }} Item(s)</h3>
             <p class="mb-0 small mt-2 fw-bold text-decoration-underline">Proceed to Checkout →</p>
           </div>
@@ -57,88 +68,94 @@
     </div>
   </div>
 
-  <div class="card shadow-sm border-0 mb-5 bg-light">
+  <div class="card shadow-sm border-0 mb-5 bg-light" style="border-radius: 15px;">
     <div class="card-body p-4">
-      <h5 class="fw-bold mb-3">🤖 AI Search Products</h5>
-      <form id="searchForm">
-        <div class="input-group input-group-lg">
-          <input type="text" name="q" id="searchInput" class="form-control border-0 shadow-none" 
-                 placeholder="Search e.g. fresh tomatoes, cheap rice..." required>
-          <button class="btn btn-success px-4">
-            <i class="fas fa-search"></i> Search
+      <h5 class="fw-bold mb-3"><i class="fas fa-robot me-2 text-success"></i> AI Search Products</h5>
+      
+      <form action="{{ url_for('search.search') }}" method="GET">
+        <div class="input-group input-group-lg overflow-hidden shadow-sm" style="border-radius: 10px;">
+          <input type="text" name="q" class="form-control border-0 px-4" 
+                 placeholder="Search e.g. 'sweet potatoes', 'Pampanga rice', 'organic'..." required>
+          <button type="submit" class="btn btn-success px-5 fw-bold">
+            <i class="fas fa-search me-2"></i> Search
           </button>
         </div>
       </form>
-    </div>
-  </div>
 
-  <div id="searchResultsSection" style="display:none;" class="mb-5">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h4 class="fw-bold mb-0">🔍 Search Results</h4>
-      <button class="btn btn-sm btn-link text-muted" onclick="location.reload()">Clear Search</button>
     </div>
-    <div id="searchResults" class="row g-3"></div>
-    <hr class="mt-5">
   </div>
 
   <div id="orders-section" class="mb-5">
-    <h4 class="fw-bold mb-3">📦 My Active Orders</h4>
-    <div class="card shadow-sm border-0 overflow-hidden">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4 class="fw-bold mb-0 text-dark">📦 My Orders & Tracking</h4>
+    </div>
+    
+    <div class="card shadow-sm border-0 overflow-hidden" style="border-radius: 15px;">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead class="bg-light text-muted small text-uppercase">
             <tr>
               <th class="ps-4">Order ID</th>
-              <th>Product</th>
+              <th>Product Details</th>
               <th>Total Weight</th>
-              <th>Grand Total</th>
+              <th>Amount</th>
               <th>Status</th>
-              <th class="pe-4">Date</th>
+              <th class="text-center">Action</th>
+              <th class="pe-4 text-end">Date</th>
             </tr>
           </thead>
           <tbody>
             {% for order in orders %}
             <tr>
-              <td class="ps-4 fw-bold">#{{ order.id }}</td>
-              
+              <td class="ps-4 fw-bold text-dark">#{{ order.id }}</td>
               <td>
+                <span class="fw-semibold">
                 {% if order.items %}
                   {{ order.items[0].product.name }}{% if order.items|length > 1 %}... (+{{ order.items|length - 1 }}){% endif %}
                 {% else %}
                   Harvest Item
                 {% endif %}
+                </span>
               </td>
-
               <td>{% if order.items %}{{ order.items|sum(attribute='quantity') }} kg{% else %}--{% endif %}</td>
-
               <td class="fw-bold text-success">₱{{ "%.2f"|format(order.total_amount or 0) }}</td>
-              
               <td>
                 {% if order.status == 'pending_admin' %}
-                  <span class="badge bg-warning text-dark px-3 rounded-pill">🔍 Awaiting Admin</span>
+                  <span class="badge bg-warning text-dark px-3 rounded-pill shadow-sm">🔍 Awaiting Admin</span>
                 {% elif order.status == 'pending' %}
-                  <span class="badge bg-info text-white px-3 rounded-pill">✅ Admin Verified</span>
+                  <span class="badge bg-info text-white px-3 rounded-pill shadow-sm">✅ Accepted</span>
                 {% elif order.status == 'processing' %}
-                  <span class="badge bg-primary text-white px-3 rounded-pill">🚜 Farmer Preparing</span>
+                  <span class="badge bg-primary text-white px-3 rounded-pill shadow-sm">🚜 Preparing</span>
                 {% elif order.status == 'shipped' %}
-                  <span class="badge bg-dark text-white px-3 rounded-pill">🚚 In Transit</span>
+                  <span class="badge bg-dark text-white px-3 rounded-pill shadow-sm">🚚 In Transit</span>
                 {% elif order.status == 'completed' %}
-                  <span class="badge bg-success text-white px-3 rounded-pill">🏁 Completed</span>
+                  <span class="badge bg-success text-white px-3 rounded-pill shadow-sm">🏁 Received</span>
                 {% else %}
-                  <span class="badge bg-secondary text-white px-3 rounded-pill">{{ order.status }}</span>
+                  <span class="badge bg-secondary text-white px-3 rounded-pill shadow-sm">{{ order.status|title }}</span>
                 {% endif %}
               </td>
-              
-              <td class="pe-4 small text-muted">
+
+              <td class="text-center">
+                {% if order.status == 'shipped' %}
+                <form action="{{ url_for('users.update_order_status', order_id=order.id, status='completed') }}" method="POST">
+                  <button type="submit" class="btn btn-sm btn-success fw-bold px-3 shadow-sm">
+                    <i class="fas fa-check-circle me-1"></i> Order Received
+                  </button>
+                </form>
+                {% elif order.status == 'completed' %}
+                  <small class="text-muted fw-bold text-uppercase"><i class="fas fa-calendar-check me-1"></i> Received</small>
+                {% else %}
+                  <span class="text-muted small italic">Waiting...</span>
+                {% endif %}
+              </td>
+
+              <td class="pe-4 text-end small text-muted">
                 {{ order.created_at.strftime('%b %d, %Y') if order.created_at else "N/A" }}
               </td>
             </tr>
             {% else %}
             <tr>
-              <td colspan="6" class="text-center py-5 text-muted">
-                <i class="fas fa-box-open fa-3x mb-3 opacity-25"></i>
-                <p class="mb-0">You haven't placed any orders yet.</p>
-              </td>
+              <td colspan="7" class="text-center py-5 text-muted">No orders placed yet.</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -151,27 +168,28 @@
   <div id="defaultProducts" class="row g-3">
     {% for product in products %}
     <div class="col-md-4">
-      <div class="card shadow-sm h-100 border-0 product-card">
+      <div class="card shadow-sm h-100 border-0 product-card" style="border-radius: 15px; overflow: hidden;">
         <img src="{{ url_for('static', filename='uploads/' + (product.image or 'default_product.jpg')) }}" 
              class="card-img-top" 
-             style="height:180px; object-fit:cover;"
-             onerror="this.src='https://placehold.co/400x200?text=No+Image'">
-        <div class="card-body">
-          <h5 class="card-title fw-bold text-dark">{{ product.name }}</h5>
-          <p class="mb-1 small text-muted"><strong>Farmer:</strong> {{ product.farmer.username }}</p>
-          <p class="mb-1 small text-muted"><strong>Location:</strong> {{ product.location }}</p>
-          <h5 class="text-success fw-bold">₱{{ "%.2f"|format(product.price) }}/kg</h5>
+             style="height:200px; object-fit:cover;"
+             onerror="this.src='https://placehold.co/400x200?text=HarvestIQ'">
+        <div class="card-body p-4">
+          <div class="mb-2 d-flex justify-content-between align-items-center">
+             <span class="badge bg-light text-success border border-success px-2">Organic</span>
+             <small class="text-muted"><i class="fas fa-map-marker-alt"></i> {{ product.location }}</small>
+          </div>
+          <h5 class="card-title fw-bold text-dark mb-1">{{ product.name }}</h5>
+          <p class="mb-3 small text-muted">Farmer: <span class="fw-bold">{{ product.farmer.username }}</span></p>
           
-          <div class="d-flex gap-2 mt-3">
-            <a href="{{ url_for('products.product_detail', product_id=product.id) }}" class="btn btn-outline-success btn-sm flex-grow-1">
-              Details
-            </a>
-            <form action="{{ url_for('cart.add_to_cart', product_id=product.id) }}" method="POST" class="flex-grow-1">
-                <input type="hidden" name="quantity" value="1">
-                <button type="submit" class="btn btn-success btn-sm w-100">
-                    + <i class="fas fa-cart-plus"></i> Add
-                </button>
-            </form>
+          <div class="d-flex justify-content-between align-items-center mt-auto">
+             <h4 class="text-success fw-bold mb-0">₱{{ "%.2f"|format(product.price) }}<small class="text-muted fw-normal">/kg</small></h4>
+             <div class="d-flex gap-1">
+                <a href="{{ url_for('products.product_detail', product_id=product.id) }}" class="btn btn-outline-success btn-sm">Details</a>
+                <form action="{{ url_for('cart.add_to_cart', product_id=product.id) }}" method="POST">
+                    <input type="hidden" name="quantity" value="1">
+                    <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-cart-plus"></i></button>
+                </form>
+             </div>
           </div>
         </div>
       </div>
@@ -182,7 +200,11 @@
 </div>
 
 <style>
-  .stats-card:hover { transform: translateY(-3px); transition: 0.3s; }
-  .product-card:hover { transform: scale(1.02); transition: 0.2s; box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; }
+  .stats-card:hover { transform: translateY(-5px); transition: 0.3s; }
+  .product-card { transition: 0.3s ease; }
+  .product-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important; }
+  .badge { font-weight: 600; }
+  .table thead th { border-top: none; }
+  .italic { font-style: italic; }
 </style>
 {% endblock %}

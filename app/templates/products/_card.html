@@ -1,96 +1,70 @@
 <div class="card product-card border-0 shadow-sm h-100">
 
-  <!-- ORGANIC BADGE -->
   {% if product.is_organic %}
-  <div class="product-badge organic-badge">🌱 Organic</div>
+  <div class="product-badge organic-badge" style="position: absolute; top: 10px; left: 10px; background: rgba(46, 125, 50, 0.9); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; z-index: 2;">
+    🌱 Organic
+  </div>
   {% endif %}
 
-  <!-- OUT OF STOCK BADGE -->
   {% if product.stock_quantity <= 0 %}
-  <div class="product-badge out-badge">Out of Stock</div>
+  <div class="product-badge out-badge" style="position: absolute; top: 10px; right: 10px; background: rgba(211, 47, 47, 0.9); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; z-index: 2;">
+    Out of Stock
+  </div>
   {% endif %}
 
-  <!-- IMAGE -->
   <a href="{{ url_for('products.product_detail', product_id=product.id) }}">
     <img src="{{ url_for('static', filename='uploads/' + (product.image or 'default_product.jpg')) }}"
          class="card-img-top product-img"
+         style="height: 200px; object-fit: cover;"
          alt="{{ product.name }}"
          onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?w=300&h=200&fit=crop'"/>
   </a>
 
-  <!-- BODY -->
   <div class="card-body pb-2">
-
-    <!-- CATEGORY -->
     <div class="text-muted small mb-1">
       {{ product.category.name if product.category else 'General' }}
     </div>
 
-    <!-- NAME -->
     <h6 class="card-title mb-1 fw-semibold">
-      <a href="{{ url_for('products.product_detail', product_id=product.id) }}"
-         class="text-dark text-decoration-none">
+      <a href="{{ url_for('products.product_detail', product_id=product.id) }}" class="text-dark text-decoration-none">
         {{ product.name or "Unnamed Product" }}
       </a>
     </h6>
 
-    <!-- LOCATION -->
     <div class="text-muted small mb-2">
       <i class="fas fa-map-marker-alt text-success me-1"></i>
       {{ product.location or 'No location' }}
     </div>
 
-    <!-- PRICE -->
     <div class="d-flex align-items-center justify-content-between">
-
       <div class="fw-bold text-success fs-6">
         ₱{{ "%.2f"|format(product.price or 0) }}
-        <span class="text-muted fw-normal small">
-          /{{ product.unit or 'kg' }}
-        </span>
+        <span class="text-muted fw-normal small">/{{ product.unit or 'kg' }}</span>
       </div>
 
-      <!-- RATING SAFE -->
       <div class="text-warning small">
-        {% set rating = (product.average_rating or 0) | int %}
+        {% set rating = (product.average_rating|default(0)) | int %}
         {% for _ in range(rating) %}⭐{% endfor %}
-        <span class="text-muted">
-          ({{ product.review_count or 0 }})
-        </span>
+        <span class="text-muted">({{ product.review_count|default(0) }})</span>
       </div>
-
     </div>
   </div>
 
-  <!-- FOOTER -->
   <div class="card-footer bg-transparent border-0 pt-0 pb-3 px-3">
-
     <div class="d-flex gap-2">
-
-      <!-- VIEW -->
-      <a href="{{ url_for('products.product_detail',
-                          product_id=product.id) }}"
+      <a href="{{ url_for('products.product_detail', product_id=product.id) }}" 
          class="btn btn-outline-success btn-sm flex-fill">
-         View
+          View
       </a>
 
-      <!-- ADD TO CART -->
       {% if product.stock_quantity > 0 %}
-      <form action="{{ url_for('cart.add_to_cart',
-                               product_id=product.id) }}"
-            method="POST"
-            class="flex-fill">
-
+      <form action="{{ url_for('cart.add_to_cart', product_id=product.id) }}" method="POST" class="flex-fill">
         <input type="hidden" name="quantity" value="1"/>
-
-        <button type="submit"
-                class="btn btn-success btn-sm w-100">
+        <button type="submit" class="btn btn-success btn-sm w-100">
           <i class="fas fa-cart-plus"></i>
         </button>
-
       </form>
       {% endif %}
-
     </div>
   </div>
 

@@ -46,7 +46,7 @@ class User(db.Model, UserMixin):
     )
     # pending / approved / rejected
 
-    # Flask-Login ACTIVE FLAG (FIXES YOUR ERROR)
+    # Flask-Login ACTIVE FLAG
     is_active = db.Column(
         db.Boolean,
         default=True
@@ -62,6 +62,14 @@ class User(db.Model, UserMixin):
     city = db.Column(db.String(100))
     barangay = db.Column(db.String(100))
     full_address = db.Column(db.Text)
+    
+    # Optional: Region field for display consistency
+    region = db.Column(db.String(100), default="Philippines")
+
+    # ─────────────────────────────────────────────
+    # RATINGS INFO (FIXES THE CRASH)
+    # ─────────────────────────────────────────────
+    average_rating = db.Column(db.Float, default=0.0) #
 
     # ─────────────────────────────────────────────
     # FARMER PRODUCT INFO

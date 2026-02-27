@@ -141,7 +141,6 @@ EN = {
     'reviews':              'reviews',
     'min_order_label':      'Min. order:',
     'harvested':            'Harvested:',
-    'visit_store':          'Visit Store',
     'add_to_cart':          'Add to Cart',
     'login_to_buy':         'Login to Buy',
     'you_might_like':       'You Might Also Like',
@@ -272,10 +271,6 @@ EN = {
     'track_deliveries':     'Track your deliveries',
     'edit_account':         'Edit account info',
 
-    # ── Farmer Store ──────────────────────────────────────────────────────────
-    'farmer_store':         "{name}'s Farm",
-    'products_from':        'Products from this Farmer',
-    'no_store_products':    'No products listed yet.',
 
     # ── Profile ───────────────────────────────────────────────────────────────
     'edit_profile':         '👤 Edit Profile',

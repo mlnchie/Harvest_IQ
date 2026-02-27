@@ -6,7 +6,6 @@
 
   <title>{% block title %}Harvest IQ{% endblock %}</title>
 
-  <!-- CSS -->
   <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css"/>
   <link rel="stylesheet"
@@ -14,51 +13,98 @@
 
   <link rel="stylesheet"
         href="{{ url_for('static', filename='css/main.css') }}"/>
+
+  <style>
+    body {
+      /* Background Image setup */
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.35)),
+        url("{{ url_for('static', filename='images/farm_bg.jpg') }}");
+      
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed; 
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    main {
+      flex: 1; 
+    }
+
+    /* 💡 PARA SA LANDING PAGE: Ginagawang transparent ang mga solid white/light sections */
+    .bg-light, .bg-white, section, .hero-section {
+      background-color: rgba(255, 255, 255, 0.75) !important;
+      backdrop-filter: blur(5px);
+    }
+
+    /* 💡 FIX PARA SA STATS CARDS: Inalis ang !important para lumitaw ang kulay */
+    .card {
+      background-color: rgba(255, 255, 255, 0.90); 
+      backdrop-filter: blur(6px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(40, 167, 69, 0.2);
+      transition: transform 0.3s ease;
+    }
+
+    /* Nirerespeto nito ang bg-colors ng Bootstrap (Success, Primary, Warning) */
+    .card.bg-success { background-color: rgba(40, 167, 69, 0.85) !important; color: white !important; }
+    .card.bg-primary { background-color: rgba(13, 110, 253, 0.85) !important; color: white !important; }
+    .card.bg-warning { background-color: rgba(255, 193, 7, 0.85) !important; color: #212529 !important; }
+
+    /* Navbar Style */
+    .navbar {
+      background-color: rgba(255, 255, 255, 0.95) !important;
+      backdrop-filter: blur(10px);
+      border-bottom: 2px solid #28a745;
+    }
+
+    .stats-card:hover { transform: translateY(-5px); }
+  </style>
 </head>
 
 <body>
 
-<!-- NAVBAR -->
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+<nav class="navbar navbar-expand-lg navbar-light shadow-sm sticky-top">
   <div class="container">
 
     <a class="navbar-brand fw-bold"
        href="{{ url_for('main.index') }}">
-       🌾 Harvest<span class="text-success">IQ</span>
+       <i class="fas fa-leaf text-success me-1"></i> Harvest<span class="text-success">IQ</span>
     </a>
 
     <div class="ms-auto">
 
       {% if current_user.is_authenticated %}
 
-        <!-- ROLE DASHBOARD LINK -->
-        <a class="btn btn-outline-success btn-sm me-2"
+        <a class="btn btn-outline-success btn-sm me-2 fw-bold rounded-pill px-3"
            href="{{ url_for('users.dashboard') }}">
-           Dashboard
+           <i class="fas fa-chart-line me-1"></i> Dashboard
         </a>
 
         {% if current_user.role == "admin" %}
-        <a class="btn btn-outline-dark btn-sm me-2"
+        <a class="btn btn-outline-dark btn-sm me-2 fw-bold rounded-pill px-3"
            href="{{ url_for('admin.dashboard') }}">
-           Admin
+           <i class="fas fa-user-shield me-1"></i> Admin
         </a>
         {% endif %}
 
-        <a class="btn btn-danger btn-sm"
+        <a class="btn btn-danger btn-sm fw-bold rounded-pill px-3"
            href="{{ url_for('auth.logout') }}">
-           Logout
+           <i class="fas fa-sign-out-alt me-1"></i> Logout
         </a>
 
       {% else %}
 
-        <a class="btn btn-outline-success btn-sm me-2"
+        <a class="btn btn-outline-success btn-sm me-2 fw-bold rounded-pill px-3"
            href="{{ url_for('auth.login') }}">
-           Login
+           <i class="fas fa-sign-in-alt me-1"></i> Login
         </a>
 
-        <a class="btn btn-success btn-sm"
+        <a class="btn btn-success btn-sm fw-bold rounded-pill px-3 shadow-sm"
            href="{{ url_for('auth.register') }}">
-           Register
+           <i class="fas fa-user-plus me-1"></i> Register
         </a>
 
       {% endif %}
@@ -67,12 +113,12 @@
   </div>
 </nav>
 
-<!-- FLASH -->
 <div class="container mt-3">
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% for category, message in messages %}
-  <div class="alert alert-{{ category }}">
+  <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
     {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
   </div>
   {% endfor %}
 {% endwith %}
@@ -81,6 +127,8 @@
 <main class="py-4">
 {% block content %}{% endblock %}
 </main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>

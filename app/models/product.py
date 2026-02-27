@@ -1,7 +1,6 @@
 from app import db
 from datetime import datetime
 
-
 class Product(db.Model):
     __tablename__ = "products"
 
@@ -16,7 +15,6 @@ class Product(db.Model):
         nullable=False
     )
 
-    # OPTIONAL CATEGORY (safe if timbang auto-create)
     category_id = db.Column(
         db.Integer,
         db.ForeignKey("categories.id"),
@@ -34,13 +32,8 @@ class Product(db.Model):
     # ─────────────────────────────
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
-
     price = db.Column(db.Float, nullable=False)
-
-    unit = db.Column(
-        db.String(50),
-        default="kg"
-    )
+    unit = db.Column(db.String(50), default="kg")
 
     stock_quantity = db.Column(
         db.Float,   # timbang uses float
@@ -59,38 +52,27 @@ class Product(db.Model):
         db.String(255),
         default="default_product.jpg"
     )
-
     images = db.Column(db.Text)
 
     # ─────────────────────────────
     # FLAGS
     # ─────────────────────────────
-    is_organic = db.Column(
-        db.Boolean,
-        default=False
-    )
-
-    is_available = db.Column(
-        db.Boolean,
-        default=True
-    )
-
-    status = db.Column(
-        db.String(20),
-        default="approved"
-    )
+    is_organic = db.Column(db.Boolean, default=False)
+    is_available = db.Column(db.Boolean, default=True)
+    status = db.Column(db.String(20), default="approved")
 
     # ─────────────────────────────
     # HARVEST INFO
     # ─────────────────────────────
     harvest_date = db.Column(db.Date)
-
     location = db.Column(db.String(200))
 
     # ─────────────────────────────
-    # ANALYTICS
+    # ANALYTICS & RATINGS (UPDATED)
     # ─────────────────────────────
     views = db.Column(db.Integer, default=0)
+    average_rating = db.Column(db.Float, default=0.0) # FIX: Added this
+    review_count = db.Column(db.Integer, default=0)   # FIX: Added this
 
     # ─────────────────────────────
     # TIMESTAMPS
@@ -99,7 +81,6 @@ class Product(db.Model):
         db.DateTime,
         default=datetime.utcnow
     )
-
     updated_at = db.Column(
         db.DateTime,
         default=datetime.utcnow,

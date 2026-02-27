@@ -141,7 +141,6 @@ TL = {
     'reviews':              'mga review',
     'min_order_label':      'Pinakamaliit na order:',
     'harvested':            'Na-harvest:',
-    'visit_store':          'Bisitahin ang Tindahan',
     'add_to_cart':          'Idagdag sa Cart',
     'login_to_buy':         'Mag-login para Bumili',
     'you_might_like':       'Maaari Rin Gusto Mo',
@@ -271,11 +270,6 @@ TL = {
     'browse_fresh':         'Sariwa mula sa bukid',
     'track_deliveries':     'Subaybayan ang iyong mga padala',
     'edit_account':         'I-edit ang impormasyon ng account',
-
-    # ── Farmer Store ──────────────────────────────────────────────────────────
-    'farmer_store':         'Bukid ni {name}',
-    'products_from':        'Mga Produkto mula sa Magsasakang Ito',
-    'no_store_products':    'Wala pang nakalista na produkto.',
 
     # ── Profile ───────────────────────────────────────────────────────────────
     'edit_profile':         '👤 I-edit ang Profile',
