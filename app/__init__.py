@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -5,7 +6,7 @@ from flask_bcrypt import Bcrypt
 from flask_mail import Mail
 from flask_socketio import SocketIO
 from flask_migrate import Migrate
-from sqlalchemy import text   # ✅ ADD THIS
+from sqlalchemy import text
 from config.development import DevelopmentConfig
 
 # ─────────────────────────────────────────────
@@ -22,9 +23,21 @@ migrate = Migrate()
 # APP FACTORY
 # ─────────────────────────────────────────────
 def create_app(config=DevelopmentConfig):
-
     app = Flask(__name__)
     app.config.from_object(config)
+
+    # 🛠️ DYNAMIC DATABASE CONFIG FOR DEPLOYMENT
+    # Kukunin ang DATABASE_URL mula sa Render Environment Variables
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url:
+        # SQLAlchemy 1.4+ fix: Dapat 'postgresql://' ang simula, hindi 'postgres://'
+        if database_url.startswith("postgres://"):
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+
+    # 🔐 PRODUCTION SECRET KEY
+    if os.environ.get('SECRET_KEY'):
+        app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
     # INIT EXTENSIONS
     db.init_app(app)
@@ -35,11 +48,13 @@ def create_app(config=DevelopmentConfig):
     socketio.init_app(app, cors_allowed_origins="*")
 
     # ─────────────────────────────────────────
-    # SQLITE WAL MODE (ANTI LOCK FIX)
+    # SQLITE WAL MODE (ONLY IF USING SQLITE)
     # ─────────────────────────────────────────
     with app.app_context():
-        db.session.execute(text("PRAGMA journal_mode=WAL;"))
-        db.session.commit()
+        # I-run lang ang PRAGMA kung SQLite ang gamit para hindi mag-error sa Postgres
+        if 'sqlite' in app.config['SQLALCHEMY_DATABASE_URI']:
+            db.session.execute(text("PRAGMA journal_mode=WAL;"))
+            db.session.commit()
 
     # LOGIN SETTINGS
     login_manager.login_view = "auth.login"
@@ -78,13 +93,11 @@ def create_app(config=DevelopmentConfig):
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
 
-
     # ─────────────────────────────────────────
     # AUTO CREATE DATABASE
     # ─────────────────────────────────────────
     with app.app_context():
         db.create_all()
-
         from app.utils.helpers import seed_categories, seed_admin
         seed_categories()
         seed_admin()
