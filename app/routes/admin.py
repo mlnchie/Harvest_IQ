@@ -1,93 +1,102 @@
-from flask import Blueprint, render_template, redirect, url_for, flash
+from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app.models.weigh_logs import WeighLog
 from app.models.product import Product
-from app.models.order import Order
+from app.models.user import User
 from app import db
+from functools import wraps
 
-admin_bp = Blueprint(
-    "admin",
-    __name__,
-    url_prefix="/admin"
-)
+admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
-# ──────────────────────────────────────────────────────────
-# 🛠 ADMIN DASHBOARD (Updated to include Product Pricing)
-# ──────────────────────────────────────────────────────────
-@admin_bp.route("/dashboard")
+# CUSTOM DECORATOR
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.role != 'admin':
+            flash("You do not have permission to access this page.", "danger")
+            return redirect(url_for('main.index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# =====================================================
+# ADMIN DASHBOARD
+# =====================================================
+@admin_bp.route('/dashboard')
 @login_required
+@admin_required
 def dashboard():
-    # Security check: Only allow users with the 'admin' role
-    if current_user.role != "admin":
-        flash("Access denied.", "danger")
-        return redirect(url_for("main.index"))
-
-    # ⚖️ PENDING WEIGH LOGS (cite: 1)
-    # Listahan ng mga timbang mula sa ESP32 na hindi pa naa-approve
-    logs = WeighLog.query.filter_by(
-        status="pending"
-    ).order_by(
-        WeighLog.created_at.desc()
-    ).all()
-
-    # 📋 PENDING ORDERS (cite: 1)
-    # Listahan ng mga orders na kailangan ng admin verification
-    pending_orders = Order.query.filter(
-        Order.status.in_(["pending_admin", "pending", "processing", "shipped"])
-    ).order_by(Order.created_at.desc()).all()
-
-    # 🏷️ PRODUCTS LIST (Kailangan para sa Manage Product Pricing)
-    # Dito kinukuha ang lahat ng produkto para lumabas sa pricing table sa HTML
-    products = Product.query.order_by(Product.created_at.desc()).all()
-
-    return render_template(
-        "dashboard/admin.html",
-        logs=logs,
-        pending_orders=pending_orders,
-        products=products # <--- ITO ANG KRUSYAL NA DINAGDAG NATIN
-    )
-
-
-# ──────────────────────────────────────────────────────────
-# ✅ APPROVE WEIGH LOG (Inventory Management)
-# ──────────────────────────────────────────────────────────
-@admin_bp.route("/approve/<int:log_id>")
-@login_required
-def approve_log(log_id):
-    if current_user.role != "admin":
-        flash("Access denied.", "danger")
-        return redirect(url_for("main.index"))
-
-    log = WeighLog.query.get_or_404(log_id)
-
-    # Prevent approving logs without a product name
-    if not log.product:
-        flash("No product name found in weigh log.", "danger")
-        return redirect(url_for("admin.dashboard"))
-
-    # Create the live Product from the Weigh Log data
-    product = Product(
-        name=log.product,
-        farmer_id=log.farmer_id,
-        stock_quantity=log.weight or 0,
-        price=log.suggested_price or 0,
-        unit="kg",
-        status="approved",
-        is_available=True,
-        location=log.province or "Unknown",
-        image="default_product.jpg"
-    )
-
-    db.session.add(product)
+    pending_logs = WeighLog.query.filter_by(status='pending').order_by(WeighLog.created_at.desc()).all()
+    products = Product.query.all() # Para sa Product Pricing table
     
-    # Update log status so it disappears from the 'Pending Weigh Logs' list
-    log.status = "approved"
+    stats = {
+        'pending_count': len(pending_logs),
+        'total_users': User.query.count(),
+        'total_products': len(products)
+    }
 
+    return render_template('dashboard/admin.html', 
+                           pending_logs=pending_logs, 
+                           products=products,
+                           stats=stats)
+
+# =====================================================
+# APPROVE WEIGH LOG
+# =====================================================
+@admin_bp.route('/approve/<int:log_id>', methods=['POST'])
+@login_required
+@admin_required
+def approve_log(log_id):
+    log = WeighLog.query.get_or_404(log_id)
     try:
+        log.status = 'approved'
+        
+        # Gagawa ng bagong product mula sa approved log
+        new_product = Product(
+            farmer_id=log.farmer_id,
+            name=log.product,
+            price=log.suggested_price or 0, # Tinitiyak na matching sa model mo
+            stock_quantity=log.weight,
+            location=f"{log.city}, {log.province}",
+            status='approved',
+            is_available=True
+        )
+        db.session.add(new_product)
         db.session.commit()
-        flash(f"Stock for {log.product} approved and added to marketplace!", "success")
+        flash(f"Approved: {log.product} is now live!", "success")
     except Exception as e:
         db.session.rollback()
-        flash("Error approving product stock.", "danger")
+        flash(f"Error: {str(e)}", "danger")
+    return redirect(url_for('admin.dashboard'))
 
-    return redirect(url_for("admin.dashboard"))
+# =====================================================
+# REJECT WEIGH LOG
+# =====================================================
+@admin_bp.route('/reject/<int:log_id>', methods=['POST'])
+@login_required
+@admin_required
+def reject_log(log_id):
+    log = WeighLog.query.get_or_404(log_id)
+    log.status = 'rejected'
+    db.session.commit()
+    flash(f"Record for {log.farmer_name} has been rejected.", "warning")
+    return redirect(url_for('admin.dashboard'))
+
+# =====================================================
+# UPDATE PRODUCT PRICE (ITO ANG MISSING ROUTE!)
+# =====================================================
+@admin_bp.route('/update-price/<int:product_id>', methods=['POST'])
+@login_required
+@admin_required
+def update_price(product_id):
+    product = Product.query.get_or_404(product_id)
+    new_price = request.form.get('new_price')
+    
+    if new_price:
+        try:
+            product.price = float(new_price)
+            db.session.commit()
+            flash(f"Price for {product.name} updated to ₱{new_price}", "success")
+        except ValueError:
+            flash("Invalid price format.", "danger")
+    
+    return redirect(url_for('admin.dashboard'))

@@ -1,190 +1,131 @@
 {% extends "base.html" %}
-{% block title %}Admin Dashboard{% endblock %}
+{% block title %}Admin Dashboard | Harvest IQ{% endblock %}
 
 {% block content %}
 <div class="container py-4">
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1"><i class="fas fa-tools text-success"></i> Admin Dashboard</h2>
-      <p class="text-muted mb-0">Marketplace Operations & Logistics Control</p>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1 text-dark">
+                <i class="fas fa-tools text-success me-2"></i> Admin Dashboard
+            </h2>
+            <p class="text-muted mb-0">Marketplace Operations & Logistics Control</p>
+        </div>
+        <div>
+            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm">
+                Logged in as: <span class="fw-bold">{{ current_user.username }}</span>
+            </span>
+        </div>
     </div>
-    <div class="text-end">
-      <span class="badge bg-light text-dark border p-2">Logged in as: {{ current_user.username }}</span>
-    </div>
-  </div>
 
-  <div class="card shadow-sm border-0 mb-4">
-    <div class="card-header fw-bold bg-white border-bottom py-3">
-      <i class="fas fa-weight me-2 text-success"></i> Pending Weigh Logs (Hardware Sync)
+    <div class="card shadow-sm border-0 mb-5 overflow-hidden" style="border-radius: 12px;">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h6 class="fw-bold mb-0 text-dark">
+                <i class="fas fa-microchip me-2 text-success"></i> Pending Weigh Logs (Hardware Sync)
+            </h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-4">Farmer</th>
+                        <th>Product</th>
+                        <th>Weight</th>
+                        <th>Suggested Price</th>
+                        <th class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in pending_logs %}
+                    <tr>
+                        <td class="ps-4 fw-bold text-dark">{{ log.farmer_name }}</td>
+                        <td>{{ log.product }}</td>
+                        <td>
+                            <span class="badge bg-light text-dark border px-2">{{ log.weight }} kg</span>
+                        </td>
+                        <td class="fw-bold">₱{{ "%.2f"|format(log.suggested_price or 0) }}</td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-2">
+                                <form action="{{ url_for('admin.approve_log', log_id=log.id) }}" method="POST">
+                                    <button type="submit" class="btn btn-sm btn-success px-3 fw-bold shadow-sm">
+                                        Approve
+                                    </button>
+                                </form>
+                                <form action="{{ url_for('admin.reject_log', log_id=log.id) }}" method="POST">
+                                    <button type="submit" class="btn btn-sm btn-danger px-3 fw-bold shadow-sm"
+                                            onclick="return confirm('Sigurado ka bang gusto mong i-reject ang record na ito?')">
+                                        Reject
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">No pending logs found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-    <div class="card-body p-0">
-      {% if logs %}
-      <div class="table-responsive">
-        <table class="table mb-0 align-middle">
-          <thead class="table-light">
-            <tr>
-              <th class="ps-3">Farmer</th>
-              <th>Product</th>
-              <th>Weight</th>
-              <th>Suggested Price</th>
-              <th class="text-center">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for log in logs %}
-            <tr>
-              <td class="ps-3">{{ log.farmer_name }}</td>
-              <td>{{ log.product }}</td>
-              <td><span class="badge bg-light text-dark border">{{ log.weight }} kg</span></td>
-              <td>₱{{ "%.2f"|format(log.suggested_price or 0) }}</td>
-              <td class="text-center">
-                <a href="{{ url_for('admin.approve_log', log_id=log.id) }}" class="btn btn-sm btn-success px-3">
-                  Approve
-                </a>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <div class="text-center py-5 text-muted">
-        <i class="fas fa-check-circle fa-2x mb-2 opacity-25"></i>
-        <p>No pending weigh logs.</p>
-      </div>
-      {% endif %}
+
+    <div class="card shadow-sm border-0 mb-4 overflow-hidden" style="border-radius: 12px;">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h6 class="fw-bold mb-0 text-dark">
+                <i class="fas fa-tags me-2 text-success"></i> Manage Product Pricing
+            </h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-4">Product Name</th>
+                        <th>Farmer</th>
+                        <th>Current Price</th>
+                        <th>Update Price</th>
+                        <th class="text-end pe-4">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td class="ps-4 fw-bold">{{ product.name }}</td>
+                        <td class="text-muted">{{ product.farmer.username }}</td>
+                        <td class="fw-bold text-success">₱{{ "%.2f"|format(product.price) }}</td>
+                        <td>
+                            <form action="{{ url_for('admin.update_price', product_id=product.id) }}" method="POST" class="d-flex gap-2">
+                                <div class="input-group input-group-sm" style="max-width: 150px;">
+                                    <span class="input-group-text bg-light">₱</span>
+                                    <input type="number" step="0.01" name="new_price" class="form-control" placeholder="{{ product.price }}">
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-primary px-3 fw-bold shadow-sm">Update</button>
+                            </form>
+                        </td>
+                        <td class="text-end pe-4">
+                            <span class="badge bg-success text-uppercase px-3 rounded-pill">Approved</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-  </div>
-
-  <div class="card shadow-sm border-0 mb-4">
-    <div class="card-header fw-bold bg-white border-bottom py-3">
-      <i class="fas fa-tags me-2 text-success"></i> Manage Product Pricing
-    </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table mb-0 align-middle">
-          <thead class="table-light">
-            <tr>
-              <th class="ps-3">Product Name</th>
-              <th>Farmer</th>
-              <th>Current Price</th>
-              <th>Update Price</th>
-              <th class="text-end pe-3">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for product in products %}
-            <tr>
-              <td class="ps-3 fw-semibold">{{ product.name }}</td>
-              <td class="small text-muted">{{ product.farmer.username }}</td>
-              <td><span class="text-success fw-bold">₱{{ "%.2f"|format(product.price|default(0)) }}</span></td>
-              <td>
-                <form action="{{ url_for('users.admin_edit_price', product_id=product.id) }}" method="POST" class="d-flex gap-2">
-                  <div class="input-group input-group-sm" style="max-width: 130px;">
-                    <span class="input-group-text bg-white border-end-0">₱</span>
-                    <input type="number" step="0.01" name="price" class="form-control border-start-0 ps-0" 
-                           value="{{ product.price }}" required>
-                  </div>
-                  <button type="submit" class="btn btn-primary btn-sm">Update</button>
-                </form>
-              </td>
-              <td class="text-end pe-3">
-                <span class="badge {% if product.status == 'approved' %}bg-success{% else %}bg-warning{% endif %}">
-                  {{ product.status|upper }}
-                </span>
-              </td>
-            </tr>
-            {% else %}
-            <tr>
-              <td colspan="5" class="text-center py-5 text-muted">No products found.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <div class="card shadow-sm border-0">
-    <div class="card-header fw-bold bg-white border-bottom py-3">
-      <i class="fas fa-shipping-fast me-2 text-success"></i> Manage Orders & Shipping
-    </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table mb-0 align-middle">
-          <thead class="table-light">
-            <tr>
-              <th class="ps-3">Order ID</th>
-              <th>Buyer</th>
-              <th>Total Amount</th>
-              <th>Status</th>
-              <th class="text-center">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for order in pending_orders %}
-            <tr>
-              <td class="ps-3">#{{ order.id }}</td>
-              <td>{{ order.buyer.username }}</td>
-              <td class="fw-bold">₱{{ "%.2f"|format(order.total_amount) }}</td>
-              <td>
-                {% if order.status == 'pending_admin' %}
-                  <span class="badge bg-warning text-dark">New Order</span>
-                {% elif order.status == 'pending' %}
-                  <span class="badge bg-info">Accepted</span>
-                {% elif order.status == 'processing' %}
-                  <span class="badge bg-primary">Farmer Packing</span>
-                {% elif order.status == 'shipped' %}
-                  <span class="badge bg-success">In Transit</span>
-                {% else %}
-                  <span class="badge bg-dark">{{ order.status | title }}</span>
-                {% endif %}
-              </td>
-              <td class="text-center">
-                
-                {% if order.status == 'pending_admin' %}
-                <form action="{{ url_for('users.admin_accept_order', order_id=order.id) }}" method="POST">
-                  <button type="submit" class="btn btn-sm btn-primary px-3">Accept Order</button>
-                </form>
-
-                {% elif order.status == 'pending' or order.status == 'processing' %}
-                <form action="{{ url_for('users.update_order_status', order_id=order.id, status='shipped') }}" method="POST">
-                  <button type="submit" class="btn btn-sm btn-info px-3">
-                    <i class="fas fa-truck me-1"></i> Ship Order
-                  </button>
-                </form>
-
-                {% elif order.status == 'shipped' %}
-                <form action="{{ url_for('users.update_order_status', order_id=order.id, status='completed') }}" method="POST">
-                  <button type="submit" class="btn btn-sm btn-success px-3">
-                    <i class="fas fa-check-double me-1"></i> Mark Delivered
-                  </button>
-                </form>
-
-                {% else %}
-                <button class="btn btn-sm btn-light border text-muted" disabled>Done</button>
-                {% endif %}
-
-              </td>
-            </tr>
-            {% else %}
-            <tr>
-              <td colspan="5" class="text-center py-5 text-muted">No active orders in the system.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
 
 </div>
 
 <style>
-  .card { border-radius: 12px; }
-  .table thead th { border-top: none; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
-  .badge { font-weight: 500; border-radius: 6px; }
-  .btn-sm { font-size: 0.75rem; font-weight: 600; }
+    .card {
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        backdrop-filter: blur(8px);
+    }
+    .table thead th {
+        border-top: none;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+    .btn-sm {
+        border-radius: 6px;
+    }
 </style>
 {% endblock %}
