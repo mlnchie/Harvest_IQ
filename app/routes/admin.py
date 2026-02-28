@@ -26,7 +26,7 @@ def admin_required(f):
 @admin_required
 def dashboard():
     pending_logs = WeighLog.query.filter_by(status='pending').order_by(WeighLog.created_at.desc()).all()
-    products = Product.query.all() # Para sa Product Pricing table
+    products = Product.query.all() 
     
     stats = {
         'pending_count': len(pending_logs),
@@ -50,11 +50,10 @@ def approve_log(log_id):
     try:
         log.status = 'approved'
         
-        # Gagawa ng bagong product mula sa approved log
         new_product = Product(
             farmer_id=log.farmer_id,
             name=log.product,
-            price=log.suggested_price or 0, # Tinitiyak na matching sa model mo
+            price=log.suggested_price or 0, 
             stock_quantity=log.weight,
             location=f"{log.city}, {log.province}",
             status='approved',
@@ -69,20 +68,34 @@ def approve_log(log_id):
     return redirect(url_for('admin.dashboard'))
 
 # =====================================================
-# REJECT WEIGH LOG
+# REJECT WEIGH LOG (UPDATED WITH REASON)
 # =====================================================
 @admin_bp.route('/reject/<int:log_id>', methods=['POST'])
 @login_required
 @admin_required
 def reject_log(log_id):
     log = WeighLog.query.get_or_404(log_id)
-    log.status = 'rejected'
-    db.session.commit()
-    flash(f"Record for {log.farmer_name} has been rejected.", "warning")
+    
+    # 🆕 Kukuha ng dahilan mula sa form input sa dashboard
+    reason = request.form.get('rejection_reason')
+    
+    if not reason:
+        flash("Mangyaring magbigay ng dahilan para sa rejection.", "danger")
+        return redirect(url_for('admin.dashboard'))
+
+    try:
+        log.status = 'rejected'
+        log.rejection_reason = reason # Sinisiguradong naka-save sa database
+        db.session.commit()
+        flash(f"Record for {log.farmer_name} has been rejected.", "warning")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error: {str(e)}", "danger")
+        
     return redirect(url_for('admin.dashboard'))
 
 # =====================================================
-# UPDATE PRODUCT PRICE (ITO ANG MISSING ROUTE!)
+# UPDATE PRODUCT PRICE
 # =====================================================
 @admin_bp.route('/update-price/<int:product_id>', methods=['POST'])
 @login_required
