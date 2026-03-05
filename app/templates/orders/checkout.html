@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Checkout | HarvestIQ{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-5 order-md-2">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-success text-white py-3">
+                    <h5 class="mb-0 fw-bold">Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in items %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{{ item.product.name }} (x{{ item.quantity }})</span>
+                        <span class="fw-bold">₱{{ "%.2f"|format(item.product.price * item.quantity) }}</span>
+                    </div>
+                    {% endfor %}
+                    <hr>
+                    <div class="d-flex justify-content-between fs-5 fw-bold text-success">
+                        <span>Total Amount</span>
+                        <span>₱{{ "%.2f"|format(total) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7 order-md-1">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold mb-4"><i class="fas fa-truck text-success me-2"></i> Shipping Details</h4>
+                    
+                    <form action="{{ url_for('orders.checkout') }}" method="POST">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted">Delivery Address</label>
+                            <textarea name="address" class="form-control bg-light border-0 shadow-sm" rows="3" 
+                                      placeholder="Paki-lagay ang kumpletong address..." required>{{ auto_address }}</textarea>
+                            <small class="text-muted italic mt-1 d-block">
+                                <i class="fas fa-info-circle me-1"></i> Awtomatikong kinuha ang address mula sa iyong profile.
+                            </small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted">Payment Method</label>
+                            <select name="payment_method" class="form-select bg-light border-0 shadow-sm">
+                                <option value="cod">Cash on Delivery (COD)</option>
+                                <option value="wallet">HarvestIQ Wallet</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-success btn-lg w-100 rounded-pill shadow fw-bold">
+                            PLACE ORDER NOW
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

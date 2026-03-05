@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}I-edit ang Profile{% endblock %}
+{% block title %}I-edit ang Profile | HarvestIQ{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -7,15 +7,15 @@
     <div class="col-md-8 col-lg-7">
       
       <div class="d-flex align-items-center mb-4">
-        <a href="{{ url_for('users.dashboard') }}" class="btn btn-light rounded-circle me-3 shadow-sm">
+        <a href="{{ url_for('users.dashboard') }}" class="btn btn-light rounded-circle me-3 shadow-sm border">
           <i class="fas fa-arrow-left"></i>
         </a>
         <h2 class="fw-bold mb-0">👤 I-edit ang Profile</h2>
       </div>
 
-      <div class="card border-0 shadow-sm">
+      <div class="card border-0 shadow-sm rounded-4">
         <div class="card-header bg-success text-white fw-bold border-0 py-3">
-          <i class="fas fa-user-circle me-2"></i> Impormasyon ng Account
+          <i class="fas fa-id-card me-2"></i> Impormasyon ng iyong Account
         </div>
         
         <div class="card-body p-4">
@@ -23,19 +23,19 @@
             
             <div class="mb-3">
               <label class="form-label fw-bold small text-muted">Buong Pangalan</label>
-              <input type="text" name="full_name" class="form-control form-control-lg" 
+              <input type="text" name="full_name" class="form-control form-control-lg bg-light" 
                      value="{{ current_user.full_name or '' }}" placeholder="Juan Dela Cruz">
             </div>
 
             <div class="row g-3 mb-3">
               <div class="col-md-6">
                 <label class="form-label fw-bold small text-muted">Phone Number</label>
-                <input type="text" name="phone" class="form-control" 
+                <input type="text" name="phone" class="form-control bg-light" 
                        value="{{ current_user.phone or '' }}" placeholder="09xxxxxxxxx">
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-bold small text-muted">Lalawigan (Province)</label>
-                <input type="text" name="province" class="form-control" 
+                <input type="text" name="province" class="form-control bg-light" 
                        value="{{ current_user.province or '' }}" placeholder="Pampanga">
               </div>
             </div>
@@ -43,28 +43,28 @@
             <div class="row g-3 mb-3">
               <div class="col-md-6">
                 <label class="form-label fw-bold small text-muted">Lungsod (City)</label>
-                <input type="text" name="city" class="form-control" 
+                <input type="text" name="city" class="form-control bg-light" 
                        value="{{ current_user.city or '' }}" placeholder="Angeles City">
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-bold small text-muted">Barangay</label>
-                <input type="text" name="barangay" class="form-control" 
+                <input type="text" name="barangay" class="form-control bg-light" 
                        value="{{ current_user.barangay or '' }}" placeholder="Balibago">
               </div>
             </div>
 
             <div class="mb-4">
-              <label class="form-label fw-bold small text-muted">Kumpletong Address</label>
-              <textarea name="full_address" class="form-control" rows="3" 
-                        placeholder="Street Name, House Number, etc.">{{ current_user.full_address or '' }}</textarea>
-              <div class="form-text small">Importante ito para sa iyong mga record ng timbang (WeighLogs).</div>
+              <label class="form-label fw-bold small text-muted">Kumpletong Address (Street, House No.)</label>
+              <textarea name="full_address" class="form-control bg-light" rows="3" 
+                         placeholder="Hal. 123 Sto. Rosario St.">{{ current_user.full_address or '' }}</textarea>
+              <div class="form-text small italic">Gagamitin ito para sa mabilis na checkout at delivery.</div>
             </div>
 
             <div class="d-grid gap-2">
-              <button type="submit" class="btn btn-success btn-lg fw-bold shadow-sm">
+              <button type="submit" class="btn btn-success btn-lg fw-bold shadow-sm rounded-pill">
                 <i class="fas fa-save me-2"></i> I-save ang mga Pagbabago
               </button>
-              <a href="{{ url_for('users.dashboard') }}" class="btn btn-outline-secondary">
+              <a href="{{ url_for('users.dashboard') }}" class="btn btn-outline-secondary rounded-pill">
                 I-kansela
               </a>
             </div>
@@ -75,4 +75,10 @@
     </div>
   </div>
 </div>
+
+<style>
+  .btn-lg { font-size: 1rem; transition: 0.3s; }
+  .btn-lg:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3) !important; }
+  .form-control:focus { border-color: #28a745; box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25); }
+</style>
 {% endblock %}

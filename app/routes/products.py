@@ -3,58 +3,42 @@ from flask_login import login_required, current_user
 from app import db
 from app.models.product import Product
 from app.models.category import Category
-from app.utils.helpers import save_image
+from app.models.review import Review # 🚨 INIDAGDAG: Import for Review model
+from app.utils.helpers import save_image, auto_map_product 
 
 products_bp = Blueprint(
     "products",
-    __name__,
+    "__name__",
     url_prefix="/products"
 )
 
-# ─────────────────────────────
-# LIST PRODUCTS
-# ─────────────────────────────
+# 🛒 MARKETPLACE: Buyer Listing (Approved Only)
 @products_bp.route("/")
 def list_products():
-    """
-    Displays the marketplace. Uses pagination to support the 
-    'products.pages' logic in the HTML template.
-    """
-    # Get current page from URL parameters (?page=1)
+    """Approved at available products lamang ang lalabas para sa marketplace."""
     page = request.args.get('page', 1, type=int)
-    per_page = 9  # Adjust this number to show more/less per page
+    per_page = 9 
 
-    # FIXED: Replaced .all() with .paginate()
+    # 🛡️ GATEKEEPER: Ipinapakita lamang ang APPROVED items sa marketplace
     products_pagination = Product.query.filter_by(
-        status="approved",
+        status="approved", 
         is_available=True
     ).order_by(Product.created_at.desc()).paginate(
-        page=page, 
-        per_page=per_page, 
-        error_out=False
+        page=page, per_page=per_page, error_out=False
     )
 
     categories = Category.query.all()
-
-    return render_template(
-        "products/list.html",
-        products=products_pagination,  # This object now has the .pages attribute
-        categories=categories
-    )
+    return render_template("products/list.html", products=products_pagination, categories=categories)
 
 
-# ─────────────────────────────
-# PRODUCT DETAIL
-# ─────────────────────────────
+# 🔍 PRODUCT DETAIL: Fixed BuildError by adding this endpoint
 @products_bp.route("/<int:product_id>")
 def product_detail(product_id):
     product = Product.query.get_or_404(product_id)
     return render_template("products/detail.html", product=product)
 
 
-# ─────────────────────────────
-# ADD PRODUCT
-# ─────────────────────────────
+# 👨‍🌾 ADD HARVEST: Starts as 'pending'
 @products_bp.route("/add", methods=["GET", "POST"])
 @login_required
 def add_product():
@@ -65,82 +49,177 @@ def add_product():
     categories = Category.query.all()
 
     if request.method == "POST":
-        image_file = request.files.get("image")
-        image_path = save_image(image_file) if image_file else "default_product.jpg"
+        try:
+            image_file = request.files.get("image")
+            image_path = save_image(image_file) if image_file else "default_product.jpg"
+            product_name = request.form.get("name")
 
-        product = Product(
-            farmer_id=current_user.id,
-            category_id=request.form.get("category_id"),
-            name=request.form.get("name"),
-            description=request.form.get("description"),
-            price=float(request.form.get("price", 0)),
-            unit="kg",
-            stock_quantity=float(request.form.get("stock_quantity", 0)),
-            status="approved",
-            is_available=True,
-            location=current_user.province,
-            image=image_path
-        )
+            # 🛡️ SAFETY NET 1: Ayusin ang category_id para hindi mag-error kung blangko
+            raw_category = request.form.get("category_id")
+            safe_category_id = int(raw_category) if raw_category and raw_category.isdigit() else None
 
-        db.session.add(product)
-        db.session.commit()
+            # 🛡️ SAFETY NET 2: Iwasan ang AttributeError kung walang 'province' ang User model
+            user_province = getattr(current_user, 'province', 'Pampanga')
+            
+            # Kuhanin ang location mula sa form (kung meron), kung wala, gamitin ang user_province
+            input_location = request.form.get("location") or user_province
 
-        flash("Product added successfully!", "success")
-        return redirect(url_for("users.dashboard"))
+            # ✨ LOGIC: Awtomatikong 'pending' para dumaan kay Admin
+            new_product = Product(
+                farmer_id=current_user.id,
+                category_id=safe_category_id,
+                name=product_name,
+                description=request.form.get("description"),
+                price=float(request.form.get("price", 0) or 0),
+                unit=request.form.get("unit", "kg"), # Kinukuha na ngayon ang unit mula sa form
+                stock_quantity=float(request.form.get("stock_quantity", 0) or 0),
+                min_order_quantity=float(request.form.get("min_order_quantity", 1) or 1), # Kinukuha na ang MOQ
+                status="pending", 
+                is_available=True,
+                is_organic='is_organic' in request.form, # Tinitingnan kung naka-check ang organic switch
+                location=input_location,
+                province="Pampanga", # 🚨 Explicitly set the Region 3 mapping
+                image=image_path
+            )
 
-    return render_template(
-        "products/add.html",
-        categories=categories
-    )
+            db.session.add(new_product)
+            db.session.commit()
+            
+            # Subukang i-run ang auto_map (balewalain kung mag-error ang NLP)
+            try:
+                auto_map_product(product_name)
+            except Exception as e:
+                print(f"⚠️ Auto-map warning (ignored): {e}")
+
+            flash(f"Success! '{product_name}' is waiting for admin approval.", "info")
+            return redirect(url_for("users.dashboard"))
+            
+        except Exception as e:
+            db.session.rollback()
+            # 🔍 LALABAS NA ITO SA TERMINAL MO KUNG MAY ERROR PA RIN
+            print(f"❌ DB ADD PRODUCT ERROR: {str(e)}")
+            flash(f"Nagka-error sa pag-save: {str(e)[:50]}...", "danger")
+
+    return render_template("products/add.html", categories=categories)
 
 
-# ─────────────────────────────
-# EDIT PRODUCT
-# ─────────────────────────────
+# ✏️ EDIT & DELETE (Ownership Protected)
 @products_bp.route("/edit/<int:product_id>", methods=["GET", "POST"])
 @login_required
 def edit_product(product_id):
     product = Product.query.get_or_404(product_id)
-
     if product.farmer_id != current_user.id:
-        flash("Unauthorized", "danger")
         return redirect(url_for("users.dashboard"))
-
-    categories = Category.query.all()
 
     if request.method == "POST":
+        # 🚨 INAYOS NA LOGIC: Sinasave na ngayon ang lahat ng fields mula sa form
         product.name = request.form.get("name")
+        
+        # Safe integer casting para sa category
+        raw_category = request.form.get("category_id")
+        product.category_id = int(raw_category) if raw_category and raw_category.isdigit() else product.category_id
+        
+        product.unit = request.form.get("unit")
+        product.price = float(request.form.get("price", 0) or 0)
+        product.stock_quantity = float(request.form.get("stock_quantity", 0) or 0)
+        product.min_order_quantity = float(request.form.get("min_order_quantity", 1) or 1)
+        product.location = request.form.get("location") or product.location
         product.description = request.form.get("description")
-        product.price = float(request.form.get("price", 0))
-        product.stock_quantity = float(request.form.get("stock_quantity", 0))
-        product.category_id = request.form.get("category_id")
+        
+        # Checkboxes (Kung walang laman sa request.form, ibig sabihin naka-uncheck)
+        product.is_organic = 'is_organic' in request.form
+        product.is_available = 'is_available' in request.form
+
+        # Update image if a new one is uploaded
+        image_file = request.files.get("image")
+        if image_file and image_file.filename != '':
+            product.image = save_image(image_file)
 
         db.session.commit()
-
-        flash("Product updated!", "success")
+        flash("Product updated successfully!", "success")
         return redirect(url_for("users.dashboard"))
 
-    return render_template(
-        "products/edit.html",
-        product=product,
-        categories=categories
-    )
+    return render_template("products/edit.html", product=product, categories=Category.query.all())
 
 
-# ─────────────────────────────
-# DELETE PRODUCT
-# ─────────────────────────────
 @products_bp.route("/delete/<int:product_id>", methods=["POST"])
 @login_required
 def delete_product(product_id):
     product = Product.query.get_or_404(product_id)
-
-    if product.farmer_id != current_user.id:
-        flash("Unauthorized", "danger")
-        return redirect(url_for("users.dashboard"))
-
-    db.session.delete(product)
-    db.session.commit()
-
-    flash("Product deleted.", "success")
+    if product.farmer_id == current_user.id or current_user.role == 'admin':
+        db.session.delete(product)
+        db.session.commit()
+        flash("Product deleted.", "success")
     return redirect(url_for("users.dashboard"))
+
+
+# ⭐ 🚨 INIDAGDAG: RATE & REVIEW PRODUCT (Para sa Buyer & Farmer Rating) 🚨 ⭐
+@products_bp.route("/<int:product_id>/rate", methods=["POST"])
+@login_required
+def rate_product(product_id):
+    product = Product.query.get_or_404(product_id)
+    
+    # 🛡️ SAFETY NET: Iwasang maka-doble ng review ang isang user sa iisang product
+    existing_review = Review.query.filter_by(product_id=product.id, reviewer_id=current_user.id).first()
+    if existing_review:
+        flash("Nakapag-review ka na sa produktong ito.", "warning")
+        return redirect(request.referrer)
+
+    try:
+        # Kunin ang data mula sa form
+        rating_value = int(request.form.get("rating", 5))
+        comment_text = request.form.get("comment", "")
+        
+        # 📸 Handle Image Upload (Dahil may image column ka)
+        image_file = request.files.get("image")
+        image_path = None
+        if image_file and image_file.filename != '':
+            image_path = save_image(image_file)
+
+        # 1. I-save ang review gamit ang iyong exact column names
+        new_review = Review(
+            product_id=product.id,
+            reviewer_id=current_user.id,
+            rating=rating_value,
+            comment=comment_text,
+            image=image_path
+        )
+        db.session.add(new_review)
+
+        # 2. I-compute ang bagong Average Rating ng mismong Product
+        if product.review_count == 0:
+            product.average_rating = float(rating_value)
+        else:
+            total_score = (product.average_rating * product.review_count) + rating_value
+            product.average_rating = total_score / (product.review_count + 1)
+            
+        product.review_count += 1
+        
+        # 🚨 3. BAGO: I-UPDATE ANG OVERALL RATING NG FARMER 🚨
+        farmer = product.farmer
+        # Kunin ang lahat ng produkto ng farmer
+        all_farmer_products = Product.query.filter_by(farmer_id=farmer.id).all()
+        
+        total_farmer_stars = 0
+        total_farmer_reviews = 0
+        
+        # I-compute ang kabuuang stars at reviews mula sa lahat ng produkto niya
+        for p in all_farmer_products:
+            if p.review_count > 0:
+                total_farmer_stars += (p.average_rating * p.review_count)
+                total_farmer_reviews += p.review_count
+                
+        # I-update ang rating ng farmer kung mayroon siyang reviews
+        if total_farmer_reviews > 0:
+            farmer.average_rating = total_farmer_stars / total_farmer_reviews
+            
+        # I-save lahat ng pagbabago sa database
+        db.session.commit()
+        flash("Salamat! Na-publish na ang iyong review at nakatulong ito sa Farmer.", "success")
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error sa pag-save ng review: {e}")
+        flash("Nagka-error sa pag-save ng review. Subukan muli.", "danger")
+
+    return redirect(request.referrer)

@@ -67,11 +67,6 @@ class User(db.Model, UserMixin):
     region = db.Column(db.String(100), default="Philippines")
 
     # ─────────────────────────────────────────────
-    # RATINGS INFO (FIXES THE CRASH)
-    # ─────────────────────────────────────────────
-    average_rating = db.Column(db.Float, default=0.0) #
-
-    # ─────────────────────────────────────────────
     # FARMER PRODUCT INFO
     # ─────────────────────────────────────────────
     main_product = db.Column(db.String(100))
@@ -129,3 +124,32 @@ class User(db.Model, UserMixin):
 
     def is_approved(self):
         return self.status == "approved"
+
+    # ─────────────────────────────────────────────
+    # 🚨 FOOLPROOF FARMER RATING CALCULATOR 🚨
+    # ─────────────────────────────────────────────
+    @property
+    def average_rating(self):
+        """
+        Direktang kumukuha sa Product table para maiwasan ang backref errors.
+        """
+        # I-import sa loob para maiwasan ang circular import error
+        from app.models.product import Product 
+        
+        # Kunin lahat ng produkto na pagmamay-ari ng farmer na ito
+        farmer_products = Product.query.filter_by(farmer_id=self.id).all()
+        
+        total_stars = 0
+        total_reviews = 0
+        
+        for p in farmer_products:
+            if p.review_count and p.review_count > 0:
+                total_stars += (p.average_rating * p.review_count)
+                total_reviews += p.review_count
+                
+        if total_reviews > 0:
+            return round(total_stars / total_reviews, 1)
+        return 0.0
+
+    def __repr__(self):
+        return f"<User {self.username} - {self.role}>"

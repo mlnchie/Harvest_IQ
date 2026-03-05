@@ -65,14 +65,16 @@ class Product(db.Model):
     # HARVEST INFO
     # ─────────────────────────────
     harvest_date = db.Column(db.Date)
-    location = db.Column(db.String(200))
+    location = db.Column(db.String(200)) 
+    # 🚨 IDINAGDAG: Province column para sa Region 3 Analytics
+    province = db.Column(db.String(200), default="Pampanga") 
 
     # ─────────────────────────────
     # ANALYTICS & RATINGS (UPDATED)
     # ─────────────────────────────
     views = db.Column(db.Integer, default=0)
-    average_rating = db.Column(db.Float, default=0.0) # FIX: Added this
-    review_count = db.Column(db.Integer, default=0)   # FIX: Added this
+    average_rating = db.Column(db.Float, default=0.0) 
+    review_count = db.Column(db.Integer, default=0)   
 
     # ─────────────────────────────
     # TIMESTAMPS

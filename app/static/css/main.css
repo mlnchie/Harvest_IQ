@@ -1,5 +1,5 @@
 /* =========================================================
-   ROOT VARIABLES
+    ROOT VARIABLES
 ========================================================= */
 :root {
   --green-primary: #2e7d32;
@@ -13,7 +13,7 @@
 }
 
 /* =========================================================
-   GLOBAL
+    GLOBAL
 ========================================================= */
 * {
   box-sizing: border-box;
@@ -32,7 +32,7 @@ body {
 }
 
 /* =========================================================
-   NAVBAR (FINAL FIX — NO OVERLAP)
+    NAVBAR (FINAL FIX — NO OVERLAP)
 ========================================================= */
 #mainNav {
   background: rgba(255,255,255,0.97);
@@ -108,7 +108,7 @@ body {
 }
 
 /* =========================================================
-   HERO SECTION (NO OVERLAP)
+    HERO SECTION (NO OVERLAP)
 ========================================================= */
 .hero-section {
   background: linear-gradient(
@@ -151,7 +151,7 @@ body {
 }
 
 /* =========================================================
-   CATEGORY CARDS
+    CATEGORY CARDS
 ========================================================= */
 .category-card .card {
   transition: var(--transition);
@@ -169,7 +169,7 @@ body {
 }
 
 /* =========================================================
-   PRODUCT CARDS
+    PRODUCT CARDS
 ========================================================= */
 .product-card {
   position: relative;
@@ -192,7 +192,7 @@ body {
 }
 
 /* =========================================================
-   FARMER CARD
+    FARMER CARD
 ========================================================= */
 .farmer-card {
   transition: var(--transition);
@@ -204,7 +204,7 @@ body {
 }
 
 /* =========================================================
-   AUTH PAGES
+    AUTH PAGES
 ========================================================= */
 .auth-page {
   background: linear-gradient(
@@ -223,7 +223,7 @@ body {
 }
 
 /* =========================================================
-   BUTTONS
+    BUTTONS
 ========================================================= */
 .btn-success {
   background: var(--green-primary) !important;
@@ -246,14 +246,14 @@ body {
 }
 
 /* =========================================================
-   FOOTER
+    FOOTER
 ========================================================= */
 .footer a:hover {
   color: #81c784 !important;
 }
 
 /* =========================================================
-   PAGE FADE
+    PAGE FADE
 ========================================================= */
 main, .container {
   animation: fadeIn 0.35s ease;
@@ -271,27 +271,78 @@ main, .container {
 }
 
 /* =========================================================
-   RESPONSIVE
+    RESPONSIVE
 ========================================================= */
 @media (max-width: 992px) {
-
   .hero-section {
     min-height: auto;
     padding: 70px 0;
   }
-
   .hero-illustration {
     font-size: 3.5rem;
   }
 }
 
 @media (max-width: 768px) {
-
   .display-4 {
     font-size: 1.9rem;
   }
-
   .brand-name {
     font-size: 1.2rem;
   }
+}
+
+/* =========================================================
+    🚨 THE OVERLAY FIX (ANTI-OVERLAP & ANTI-GHOSTING) 🚨
+    Sinisiguro nito na laging nasa itaas ang nasearch at hindi transparent.
+========================================================= */
+
+#search-suggestions {
+  position: absolute !important; 
+  top: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  
+  /* 🟢 LAYER PRIORITY: Mas mataas sa lahat ng Bootstrap table elements at buttons */
+  z-index: 999999 !important; 
+  
+  /* 🟢 SOLIDITY: Pinilit na gawing solid white para hindi lumusot ang nasa likod */
+  background-color: #ffffff !important; 
+  
+  border: 1.5px solid rgba(40, 167, 69, 0.3) !important;
+  border-radius: 0 0 var(--radius) var(--radius) !important;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2) !important;
+  
+  max-height: 480px;
+  overflow-y: auto;
+  margin-top: 2px;
+  padding: 0 !important;
+}
+
+/* Siguraduhin na ang bawat item ay solid white din at clickable */
+#search-suggestions .list-group-item {
+  background-color: #ffffff !important; 
+  color: #2d3748 !important;
+  border: none !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+  position: relative !important;
+  z-index: 1000000 !important; 
+  display: block !important;
+  opacity: 1 !important;
+  padding: 18px 25px !important;
+  transition: var(--transition);
+  text-decoration: none !important;
+  cursor: pointer !important;
+}
+
+#search-suggestions .list-group-item:hover {
+  background-color: var(--green-pale) !important;
+  border-left: 6px solid var(--green-primary) !important;
+  color: var(--green-primary) !important;
+}
+
+/* Dagdag: Utility class para sa parent card sa buyer.html */
+.search-container-fix {
+  overflow: visible !important;
+  z-index: 1050 !important;
 }

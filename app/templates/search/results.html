@@ -2,80 +2,44 @@
 {% block title %}Search Results | HarvestIQ{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container py-5">
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="fw-bold mb-0 text-dark">
-      🔍 Resulta para sa "<span class="text-success">{{ query }}</span>"
-    </h3>
-    <a href="{{ url_for('users.dashboard') }}" class="btn btn-outline-secondary btn-sm shadow-sm">
-      <i class="fas fa-arrow-left me-1"></i> Bumalik sa Dashboard
+  <div class="d-flex justify-content-between align-items-center mb-5">
+    <div>
+      <h3 class="fw-bold mb-1 text-dark">
+        🔍 Resulta para sa "<span class="text-success">{{ query }}</span>"
+      </h3>
+      <p class="text-muted small mb-0">Nahanap ang {{ products|length }} harvest results sa Region 3</p>
+    </div>
+    <a href="{{ url_for('users.dashboard') }}" class="btn btn-light btn-sm rounded-pill px-3 border shadow-sm">
+      <i class="fas fa-chevron-left me-1"></i> Dashboard
     </a>
   </div>
 
   <div class="row g-4">
-
     {% for product in products %}
-    <div class="col-md-4 col-lg-3">
-      <div class="card shadow-sm h-100 border-0 product-card" style="border-radius: 15px; overflow: hidden;">
-        
-        <img src="{{ url_for('static', filename='uploads/' + (product.image or 'default_product.jpg')) }}"
-             class="card-img-top"
-             style="height:200px; object-fit:cover;"
-             onerror="this.src='https://placehold.co/400x200?text=HarvestIQ'">
-
-        <div class="card-body p-4 d-flex flex-column">
-          
-          <div class="mb-2 d-flex justify-content-between align-items-center">
-             <span class="badge bg-light text-success border border-success px-2">
-               Stock: {{ product.stock_quantity }} kg
-             </span>
-             <small class="text-muted"><i class="fas fa-map-marker-alt text-danger"></i> {{ product.location or 'Pilipinas' }}</small>
-          </div>
-
-          <h5 class="card-title fw-bold text-dark mb-1">{{ product.name }}</h5>
-          <p class="small text-muted mb-3">
-            <i class="fas fa-user-circle me-1"></i> {{ product.farmer.full_name or product.farmer.username }}
-          </p>
-
-          <div class="mt-auto">
-             <h4 class="text-success fw-bold mb-3">₱{{ "%.2f"|format(product.price or 0) }}<small class="text-muted fw-normal">/kg</small></h4>
-             
-             <div class="d-flex gap-2">
-                <a href="{{ url_for('products.product_detail', product_id=product.id) }}" class="btn btn-outline-success btn-sm flex-grow-1 fw-bold">
-                  Detalye
-                </a>
-                
-                <form action="{{ url_for('cart.add_to_cart', product_id=product.id) }}" method="POST">
-                    <input type="hidden" name="quantity" value="1">
-                    <button type="submit" class="btn btn-success btn-sm fw-bold px-3 shadow-sm">
-                        <i class="fas fa-cart-plus"></i>
-                    </button>
-                </form>
-             </div>
-          </div>
-
-        </div>
-      </div>
+    <div class="col-sm-6 col-md-4 col-lg-3">
+        {% include 'products/_card.html' %}
     </div>
-
     {% else %}
     <div class="col-12 text-center text-muted py-5">
-      <i class="fas fa-search-minus fa-4x mb-3 opacity-25"></i>
-      <h4 class="fw-bold">Walang nahanap na produkto.</h4>
-      <p>Subukan ang ibang keyword o i-check ang spelling.</p>
-      <a href="{{ url_for('users.dashboard') }}" class="btn btn-success mt-3 shadow-sm px-4">
-         <i class="fas fa-shopping-basket me-2"></i> Maghanap ng iba pang Fresh Products
+      <div class="bg-light d-inline-block p-4 rounded-circle mb-4">
+        <i class="fas fa-search-minus fa-3x opacity-25"></i>
+      </div>
+      <h4 class="fw-bold text-dark">Walang nahanap na produkto.</h4>
+      <p>Subukan ang ibang keyword o i-check ang supply sa ibang area ng Region 3.</p>
+      <a href="{{ url_for('users.dashboard') }}" class="btn btn-success mt-3 shadow-sm px-4 rounded-pill fw-bold">
+          <i class="fas fa-leaf me-2"></i> See All Products
       </a>
     </div>
     {% endfor %}
-
   </div>
 
 </div>
 
 <style>
-  .product-card { transition: 0.3s ease; }
-  .product-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important; }
+  .product-card { transition: all 0.3s cubic-bezier(.25,.8,.25,1); }
+  .product-card:hover { transform: translateY(-8px); box-shadow: 0 15px 35px rgba(0,0,0,0.12) !important; }
+  .product-img:hover { transform: scale(1.05); }
 </style>
 {% endblock %}

@@ -44,6 +44,61 @@
   </div>
 
   <div class="card border-0 shadow-sm mb-4 glass-card">
+    <div class="card-header bg-dark text-white fw-bold border-0 py-3">
+      <i class="fas fa-boxes-stacked me-2"></i> Listahan ng Aking mga Produkto
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">Produkto</th>
+              <th>Presyo</th>
+              <th>Stock</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Aksyon</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for product in farmer_products %}
+            <tr>
+              <td class="ps-3">
+                <div class="fw-bold text-dark">{{ product.name }}</div>
+                <small class="text-muted">{{ product.category.name if product.category else 'N/A' }}</small>
+              </td>
+              <td>₱{{ "%.2f"|format(product.price) }}</td>
+              <td>{{ product.stock_quantity }} {{ product.unit or 'kg' }}</td>
+              <td class="text-center">
+                {% if product.status == 'pending' %}
+                  <span class="badge bg-warning text-dark rounded-pill px-3 shadow-sm">
+                    <i class="fas fa-clock me-1"></i> Pending Approval
+                  </span>
+                {% else %}
+                  <span class="badge bg-success rounded-pill px-3 shadow-sm">
+                    <i class="fas fa-check-circle me-1"></i> Live sa Marketplace
+                  </span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <a href="{{ url_for('products.edit_product', product_id=product.id) }}" class="btn btn-outline-primary btn-sm rounded-pill">
+                  <i class="fas fa-edit"></i>
+                </a>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="5" class="text-center py-5 text-muted">
+                <p class="mb-0">Wala ka pang naidaragdag na produkto.</p>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4 glass-card">
     <div class="card-header bg-success text-white fw-bold border-0 py-3">
       <i class="fas fa-clipboard-list me-2"></i> Subaybay sa mga Order (Read-Only)
     </div>
@@ -195,6 +250,61 @@
     </div>
   </div>
 
+  <div class="mt-5 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="fw-bold mb-0">🌟 Customer Feedbacks</h4>
+      <div class="text-warning fs-5 bg-white px-3 py-1 rounded-pill shadow-sm border">
+        <strong>{{ current_user.average_rating }}</strong> 
+        <i class="fas fa-star"></i> <span class="text-dark small ms-1">Overall Rating</span>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      {% set has_reviews = False %}
+      {% for product in farmer_products %}
+        {% for review in product.product_reviews %}
+          {% set has_reviews = True %}
+          <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4">
+              <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                  <div class="fw-bold small text-success">{{ product.name }}</div>
+                  <div class="text-warning small">
+                    {% for i in range(review.rating) %}⭐{% endfor %}
+                  </div>
+                </div>
+                
+                <p class="text-muted small fst-italic mb-3">"{{ review.comment or 'Walang iniwang komento.' }}"</p>
+                
+                {% if review.image %}
+                <img src="{{ url_for('static', filename='images/' + review.image) }}" class="img-fluid rounded mb-3" style="height: 100px; width: 100%; object-fit: cover;">
+                {% endif %}
+                
+                <div class="d-flex align-items-center gap-2 mt-auto pt-2 border-top">
+                  <img src="https://ui-avatars.com/api/?name={{ review.reviewer.username }}&background=e8f5e9&color=2e7d32&size=25" class="rounded-circle">
+                  <small class="text-muted" style="font-size: 0.75rem;">
+                    Reviewed by <strong>{{ review.reviewer.full_name or review.reviewer.username }}</strong><br>
+                    {{ review.created_at.strftime('%b %d, %Y') }}
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% endfor %}
+      
+      {% if not has_reviews %}
+      <div class="col-12">
+        <div class="alert alert-light text-center border-0 text-muted shadow-sm rounded-4 py-5">
+          <i class="fas fa-star-half-alt fa-3x mb-3 opacity-25"></i><br>
+          <h5>Wala pang reviews ang iyong mga produkto.</h5>
+          <p class="small">Kapag nakapag-rate na ang mga buyers, lilitaw rito ang kanilang feedback at proof of delivery!</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
 </div>
 
 <style>
@@ -224,21 +334,17 @@ document.addEventListener("DOMContentLoaded", function () {
   const farmerId = startBtn.dataset.farmerId;
   let statusInterval;
 
-  // 🔄 IMPROVED POLLING: Automatic refresh when hardware sends data
   async function checkHardwareStatus() {
     try {
       const res = await fetch(`/api/check-weighing/${farmerId}`);
       const data = await res.json();
       
-      // Kapag ang 'weighing' ay naging false, ibig sabihin tapos na ang hardware session
       if (data.weighing === false && startBtn.disabled) {
         clearInterval(statusInterval);
         statusDiv.innerHTML = `
           <div class="alert alert-info border-0 shadow-sm glass-card">
             <i class="fas fa-sync fa-spin me-2"></i> Weight detected! Ina-update ang dashboard...
           </div>`;
-        
-        // Mag-reload para lumitaw ang bagong data sa table
         setTimeout(() => location.reload(), 2000);
       }
     } catch (err) {
@@ -271,8 +377,6 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = await res.json();
       if (data.status === "started") {
         statusDiv.innerHTML = `<div class="alert alert-success border-0 shadow-sm glass-card">✅ Scale Ready. Pakilagay ang produkto sa timbangan.</div>`;
-        
-        // Magsimula ng polling bawat 3 segundo
         statusInterval = setInterval(checkHardwareStatus, 3000);
       }
     } catch (err) {
@@ -286,8 +390,6 @@ document.addEventListener("DOMContentLoaded", function () {
     clearInterval(statusInterval);
     await fetch("/api/stop-weighing", { method: "POST" });
     statusDiv.innerHTML = `<div class="alert alert-warning border-0 shadow-sm glass-card">🛑 Itinigil ang pagtitimbang.</div>`;
-    
-    // Refresh para ma-reset ang UI
     setTimeout(() => location.reload(), 1500);
   });
 });

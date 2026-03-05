@@ -4,207 +4,301 @@
 {% block content %}
 <div class="container py-4">
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
     <div>
       <h2 class="fw-bold mb-1">🛒 Buyer Dashboard</h2>
-      <p class="text-muted mb-0">
-        Welcome Back, <strong>{{ current_user.full_name or current_user.username }}</strong>!
-      </p>
+      <p class="text-muted mb-0">Welcome Back, <strong>{{ current_user.full_name or current_user.username }}</strong>!</p>
       <small class="text-muted">
         <i class="fas fa-map-marker-alt me-1 text-success"></i> 
-        {{ current_user.city or 'No City' }}, {{ current_user.province or 'No Province' }}
+        {{ current_user.city or 'Angeles' }}, {{ current_user.province or 'Pampanga' }}
       </small>
     </div>
-    
     <div class="d-flex gap-2">
-      <a href="{{ url_for('users.edit_profile') }}" class="btn btn-outline-primary shadow-sm border-2">
-        <i class="fas fa-user-edit me-2"></i> Edit Profile
-      </a>
-
-      <a href="{{ url_for('cart.view_cart') }}" class="btn btn-outline-success position-relative shadow-sm border-2">
-        <i class="fas fa-shopping-cart me-1"></i> My Cart
-        {% if cart_count and cart_count > 0 %}
-        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-          {{ cart_count }}
-        </span>
-        {% endif %}
+      <button class="btn btn-outline-dark btn-sm rounded-pill px-3 shadow-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#ordersModal">
+        <i class="fas fa-clipboard-list me-1"></i> My Purchases
+      </button>
+      
+      <a href="{{ url_for('users.edit_profile') }}" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm"><i class="fas fa-user-edit me-1"></i> Profile</a>
+      <a href="{{ url_for('cart.view_cart') }}" class="btn btn-outline-success btn-sm rounded-pill px-3 position-relative shadow-sm">
+        <i class="fas fa-shopping-cart me-1"></i> Cart
+        {% if cart_count and cart_count > 0 %}<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ cart_count }}</span>{% endif %}
       </a>
     </div>
   </div>
 
-  <div class="row g-3 mb-4">
-    <div class="col-md-4">
-      <a href="#orders-section" class="text-decoration-none">
-        <div class="card bg-success text-white border-0 shadow-sm h-100 stats-card" style="border-radius: 12px;">
-          <div class="card-body p-4">
-            <h6 class="small text-uppercase opacity-75 fw-bold">Active Orders</h6>
-            <h3 class="fw-bold mb-0">{{ orders|length }}</h3>
-            <p class="mb-0 small mt-2">View status and tracking details →</p>
-          </div>
-        </div>
-      </a>
-    </div>
-
-    <div class="col-md-4">
-      <div class="card bg-primary text-white border-0 shadow-sm h-100" style="border-radius: 12px;">
+  <div class="row g-3 mb-4 text-center">
+    <div class="col-md-3">
+      <div class="card bg-success text-white border-0 shadow-sm h-100 rounded-4 stats-card" 
+           style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#ordersModal">
         <div class="card-body p-4">
-          <h6 class="small text-uppercase opacity-75 fw-bold">Account Status</h6>
-          <h3 class="fw-bold mb-0">{{ current_user.role|capitalize }}</h3>
-          <p class="mb-0 small mt-2">Verified HarvestIQ Buyer Account</p>
+          <h6 class="small text-uppercase opacity-75 fw-bold">Active Tracking</h6>
+          <h2 class="fw-bold mb-0">{{ orders|selectattr('status', 'ne', 'completed')|list|length }}</h2>
+          <small class="text-white-50">View Details →</small>
         </div>
       </div>
     </div>
-
-    <div class="col-md-4">
-      <a href="{{ url_for('cart.view_cart') }}" class="text-decoration-none">
-        <div class="card bg-warning text-dark border-0 shadow-sm h-100" style="border-radius: 12px;">
-          <div class="card-body p-4">
-            <h6 class="small text-uppercase opacity-75 fw-bold">My Cart 🛒</h6>
-            <h3 class="fw-bold mb-0">{{ cart_count or 0 }} Item(s)</h3>
-            <p class="mb-0 small mt-2 fw-bold text-decoration-underline">Proceed to Checkout →</p>
-          </div>
+    <div class="col-md-3">
+      <div class="card bg-primary text-white border-0 shadow-sm h-100 rounded-4">
+        <div class="card-body p-4">
+          <h6 class="small text-uppercase opacity-75 fw-bold">Region Supply</h6>
+          <h2 class="fw-bold mb-0">{{ "%.2f"|format(total_supply or 0) }} kg</h2>
+          <small class="text-white-50">Total Available in R3</small>
         </div>
-      </a>
+      </div>
     </div>
+    <div class="col-md-3"><div class="card bg-info text-white border-0 shadow-sm h-100 rounded-4"><div class="card-body p-4"><h6 class="small text-uppercase opacity-75 fw-bold">Status</h6><h2 class="fw-bold mb-0">Verified</h2></div></div></div>
+    <div class="col-md-3"><div class="card bg-warning text-dark border-0 shadow-sm h-100 rounded-4"><div class="card-body p-4"><h6 class="small text-uppercase opacity-75 fw-bold">Cart</h6><h2 class="fw-bold mb-0">{{ cart_count or 0 }}</h2></div></div></div>
   </div>
 
-  <div class="card shadow-sm border-0 mb-5 bg-light" style="border-radius: 15px;">
-    <div class="card-body p-4">
-      <h5 class="fw-bold mb-3"><i class="fas fa-robot me-2 text-success"></i> AI Search Products</h5>
+  <div class="card shadow-sm border-0 mb-5 bg-light" style="border-radius: 15px; overflow: visible !important; position: relative; z-index: 10;">
+    <div class="card-body p-5 text-center position-relative" style="overflow: visible !important;">
+      <h5 class="fw-bold mb-2"><i class="fas fa-robot me-2 text-primary"></i> AI Search Assistant</h5>
+      <p class="text-muted small mb-4">Search ingredients for 'torta', 'breakfast', or 'dinner'. HarvestIQ AI will find them for you.</p>
       
-      <form action="{{ url_for('search.search') }}" method="GET">
+      <form action="{{ url_for('main.search') }}" method="GET" class="position-relative mx-auto" style="max-width: 800px; z-index: 1000000;">
         <div class="input-group input-group-lg overflow-hidden shadow-sm" style="border-radius: 10px;">
-          <input type="text" name="q" class="form-control border-0 px-4" 
-                 placeholder="Search e.g. 'sweet potatoes', 'Pampanga rice', 'organic'..." required>
-          <button type="submit" class="btn btn-success px-5 fw-bold">
-            <i class="fas fa-search me-2"></i> Search
-          </button>
+          <input type="text" name="q" class="form-control border-0 px-4" placeholder="Anong ulam ang lulutuin mo?" autocomplete="off" required>
+          <button type="submit" class="btn btn-success px-5 fw-bold"><i class="fas fa-search"></i></button>
+        </div>
+        
+        <div id="search-suggestions" class="list-group shadow-lg mt-1" 
+             style="position: absolute; top: 100%; left: 0; right: 0; z-index: 9999999; display: none;">
         </div>
       </form>
-
     </div>
   </div>
 
-  <div id="orders-section" class="mb-5">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h4 class="fw-bold mb-0 text-dark">📦 My Orders & Tracking</h4>
-    </div>
-    
-    <div class="card shadow-sm border-0 overflow-hidden" style="border-radius: 15px;">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="bg-light text-muted small text-uppercase">
-            <tr>
-              <th class="ps-4">Order ID</th>
-              <th>Product Details</th>
-              <th>Total Weight</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th class="text-center">Action</th>
-              <th class="pe-4 text-end">Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for order in orders %}
-            <tr>
-              <td class="ps-4 fw-bold text-dark">#{{ order.id }}</td>
-              <td>
-                <span class="fw-semibold">
-                {% if order.items %}
-                  {{ order.items[0].product.name }}{% if order.items|length > 1 %}... (+{{ order.items|length - 1 }}){% endif %}
-                {% else %}
-                  Harvest Item
-                {% endif %}
-                </span>
-              </td>
-              <td>{% if order.items %}{{ order.items|sum(attribute='quantity') }} kg{% else %}--{% endif %}</td>
-              <td class="fw-bold text-success">₱{{ "%.2f"|format(order.total_amount or 0) }}</td>
-              <td>
-                {% if order.status == 'pending_admin' %}
-                  <span class="badge bg-warning text-dark px-3 rounded-pill shadow-sm">🔍 Awaiting Admin</span>
-                {% elif order.status == 'pending' %}
-                  <span class="badge bg-info text-white px-3 rounded-pill shadow-sm">✅ Accepted</span>
-                {% elif order.status == 'processing' %}
-                  <span class="badge bg-primary text-white px-3 rounded-pill shadow-sm">🚜 Preparing</span>
-                {% elif order.status == 'shipped' %}
-                  <span class="badge bg-dark text-white px-3 rounded-pill shadow-sm">🚚 In Transit</span>
-                {% elif order.status == 'completed' %}
-                  <span class="badge bg-success text-white px-3 rounded-pill shadow-sm">🏁 Received</span>
-                {% else %}
-                  <span class="badge bg-secondary text-white px-3 rounded-pill shadow-sm">{{ order.status|title }}</span>
-                {% endif %}
-              </td>
-
-              <td class="text-center">
-                {% if order.status == 'shipped' %}
-                <form action="{{ url_for('users.update_order_status', order_id=order.id, status='completed') }}" method="POST">
-                  <button type="submit" class="btn btn-sm btn-success fw-bold px-3 shadow-sm">
-                    <i class="fas fa-check-circle me-1"></i> Order Received
-                  </button>
-                </form>
-                {% elif order.status == 'completed' %}
-                  <small class="text-muted fw-bold text-uppercase"><i class="fas fa-calendar-check me-1"></i> Received</small>
-                {% else %}
-                  <span class="text-muted small italic">Waiting...</span>
-                {% endif %}
-              </td>
-
-              <td class="pe-4 text-end small text-muted">
-                {{ order.created_at.strftime('%b %d, %Y') if order.created_at else "N/A" }}
-              </td>
-            </tr>
-            {% else %}
-            <tr>
-              <td colspan="7" class="text-center py-5 text-muted">No orders placed yet.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <h4 class="fw-bold mb-3">🌾 Fresh from the Farm</h4>
-  <div id="defaultProducts" class="row g-3">
-    {% for product in products %}
-    <div class="col-md-4">
-      <div class="card shadow-sm h-100 border-0 product-card" style="border-radius: 15px; overflow: hidden;">
-        <img src="{{ url_for('static', filename='uploads/' + (product.image or 'default_product.jpg')) }}" 
-             class="card-img-top" 
-             style="height:200px; object-fit:cover;"
-             onerror="this.src='https://placehold.co/400x200?text=HarvestIQ'">
-        <div class="card-body p-4">
-          <div class="mb-2 d-flex justify-content-between align-items-center">
-             <span class="badge bg-light text-success border border-success px-2">Organic</span>
-             <small class="text-muted"><i class="fas fa-map-marker-alt"></i> {{ product.location }}</small>
-          </div>
-          <h5 class="card-title fw-bold text-dark mb-1">{{ product.name }}</h5>
-          <p class="mb-3 small text-muted">Farmer: <span class="fw-bold">{{ product.farmer.username }}</span></p>
-          
-          <div class="d-flex justify-content-between align-items-center mt-auto">
-             <h4 class="text-success fw-bold mb-0">₱{{ "%.2f"|format(product.price) }}<small class="text-muted fw-normal">/kg</small></h4>
-             <div class="d-flex gap-1">
-                <a href="{{ url_for('products.product_detail', product_id=product.id) }}" class="btn btn-outline-success btn-sm">Details</a>
-                <form action="{{ url_for('cart.add_to_cart', product_id=product.id) }}" method="POST">
-                    <input type="hidden" name="quantity" value="1">
-                    <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-cart-plus"></i></button>
-                </form>
-             </div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <h4 class="fw-bold mb-3">🌾 Fresh from Region 3</h4>
+  <div class="row g-4 mb-5" style="position: relative; z-index: 1;">
+    {% for product in products[:8] %}
+    <div class="col-sm-6 col-md-4 col-lg-3">{% include 'products/_card.html' %}</div>
     {% endfor %}
   </div>
 
 </div>
 
+{% macro render_order_table(order_list) %}
+<div class="table-responsive">
+  <table class="table table-hover align-middle mb-0">
+    <thead class="bg-light text-muted small text-uppercase">
+      <tr><th class="ps-4">ID</th><th>Product</th><th>Status</th><th class="text-center pe-4">Action</th></tr>
+    </thead>
+    <tbody>
+      {% for order in order_list %}
+      {% set product = order.items[0].product if order.items else None %}
+      {% set has_reviewed = False %}
+      {% if product %}
+        {% for review in product.product_reviews %}
+          {% if review.reviewer_id == current_user.id %}{% set has_reviewed = True %}{% endif %}
+        {% endfor %}
+      {% endif %}
+      
+      <tr>
+        <td class="ps-4 fw-bold">#{{ order.id }}</td>
+        <td>
+          {{ product.name if product else 'Harvest' }}
+          {% if has_reviewed %}<br><small class="text-success"><i class="fas fa-check-circle"></i> Rated</small>{% endif %}
+        </td>
+        <td>
+          <span class="badge rounded-pill 
+            {% if order.status == 'completed' %}bg-success
+            {% elif order.status == 'shipped' %}bg-primary
+            {% else %}bg-warning text-dark{% endif %}">
+            {{ order.status|title }}
+          </span>
+        </td>
+        <td class="text-center pe-4">
+          {% if order.status == 'pending' or order.status == 'processing' %}
+            <small class="text-muted fst-italic">Preparing...</small>
+          {% elif order.status == 'shipped' %}
+            <form action="{{ url_for('admin.update_order_status', order_id=order.id, status='completed') }}" method="POST">
+              <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm">Received</button>
+            </form>
+          {% elif order.status == 'completed' %}
+            {% if not has_reviewed and product %}
+              <button class="btn btn-sm btn-outline-warning text-dark fw-bold rounded-pill px-3 shadow-sm" data-bs-toggle="collapse" data-bs-target="#reviewFormModal-{{ order.id }}">
+                ⭐ Rate
+              </button>
+            {% else %}
+              <button class="btn btn-sm btn-outline-secondary rounded-pill px-3">Receipt</button>
+            {% endif %}
+          {% endif %}
+        </td>
+      </tr>
+      
+      {% if order.status == 'completed' and product and not has_reviewed %}
+      <tr>
+        <td colspan="4" class="p-0 border-0">
+          <div class="collapse bg-light p-3 border-bottom" id="reviewFormModal-{{ order.id }}">
+            <form action="{{ url_for('products.rate_product', product_id=product.id) }}" method="POST" enctype="multipart/form-data" class="d-flex flex-column gap-2">
+              <div class="d-flex justify-content-between align-items-center">
+                <label class="fw-bold small m-0 text-success">Rate {{ product.name }}</label>
+                <select class="form-select form-select-sm w-auto" name="rating" required>
+                  <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
+                  <option value="4">⭐⭐⭐⭐ (4/5)</option>
+                  <option value="3">⭐⭐⭐ (3/5)</option>
+                  <option value="2">⭐⭐ (2/5)</option>
+                  <option value="1">⭐ (1/5)</option>
+                </select>
+              </div>
+              <div class="d-flex gap-2">
+                <textarea class="form-control form-control-sm" name="comment" rows="1" placeholder="Mag-iwan ng komento (Optional)"></textarea>
+                <input type="file" class="form-control form-control-sm w-auto" name="image" accept="image/*" title="Upload proof (Optional)">
+                <button type="submit" class="btn btn-success btn-sm fw-bold px-3">Submit</button>
+              </div>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endif %}
+      
+      {% else %}
+      <tr><td colspan="4" class="text-center py-5 text-muted"><i class="fas fa-box-open fa-2x mb-2 opacity-50"></i><br>Wala pang order sa section na ito.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
+
+<div class="modal fade" id="ordersModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+      <div class="modal-header border-0 bg-success text-white px-4 pt-4 pb-0" style="border-radius: 20px 20px 0 0;">
+        <div class="w-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="modal-title fw-bold"><i class="fas fa-box-open me-2"></i> My Purchases</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          
+          <ul class="nav nav-tabs border-0 flex-nowrap overflow-auto" id="orderTabs" role="tablist" style="scrollbar-width: none;">
+            <li class="nav-item">
+              <button class="nav-link order-tab active fw-bold text-white border-0 bg-transparent" id="all-tab" data-bs-toggle="tab" data-bs-target="#tab-all" type="button" style="border-bottom: 3px solid white !important; opacity: 1;">All Orders</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link order-tab fw-bold text-white border-0 bg-transparent" id="pending-tab" data-bs-toggle="tab" data-bs-target="#tab-pending" type="button" style="opacity: 0.75;">To Ship</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link order-tab fw-bold text-white border-0 bg-transparent" id="shipped-tab" data-bs-toggle="tab" data-bs-target="#tab-shipped" type="button" style="opacity: 0.75;">To Receive</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link order-tab fw-bold text-white border-0 bg-transparent" id="completed-tab" data-bs-toggle="tab" data-bs-target="#tab-completed" type="button" style="opacity: 0.75;">To Rate</button>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-body p-0">
+        <div class="tab-content">
+          
+          <div class="tab-pane fade show active" id="tab-all" role="tabpanel">
+            {{ render_order_table(orders) }}
+          </div>
+          
+          <div class="tab-pane fade" id="tab-pending" role="tabpanel">
+            {% set pending_orders = orders|selectattr('status', 'equalto', 'pending')|list %}
+            {% set processing_orders = orders|selectattr('status', 'equalto', 'processing')|list %}
+            {{ render_order_table(pending_orders + processing_orders) }}
+          </div>
+          
+          <div class="tab-pane fade" id="tab-shipped" role="tabpanel">
+            {{ render_order_table(orders|selectattr('status', 'equalto', 'shipped')|list) }}
+          </div>
+          
+          <div class="tab-pane fade" id="tab-completed" role="tabpanel">
+            {{ render_order_table(orders|selectattr('status', 'equalto', 'completed')|list) }}
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Tab Styling Script
+document.querySelectorAll('.order-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.order-tab').forEach(t => {
+      t.style.borderBottom = 'none';
+      t.style.opacity = '0.75';
+    });
+    this.style.borderBottom = '3px solid white';
+    this.style.opacity = '1';
+  });
+});
+
+// DEBOUNCE FUNCTION (Para sa Search)
+function debounce(func, timeout = 500) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { func.apply(this, args); }, timeout);
+  };
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[name="q"]');
+    const suggestionsContainer = document.getElementById('search-suggestions');
+
+    const performSearch = async (query) => {
+        if (query.length < 3) { 
+            suggestionsContainer.innerHTML = ''; 
+            suggestionsContainer.style.display = 'none';
+            return; 
+        }
+
+        try {
+            suggestionsContainer.innerHTML = '<div class="list-group-item text-muted small"><i class="fas fa-brain fa-pulse text-primary me-2"></i>HarvestIQ AI is thinking...</div>';
+            suggestionsContainer.style.display = 'block';
+
+            const response = await fetch(`/search-suggestions?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+            
+            if (data.length > 0) {
+                suggestionsContainer.innerHTML = data.map(item => `
+                    <a href="/search?q=${encodeURIComponent(item.text)}" 
+                       class="list-group-item list-group-item-action py-3 border-0 border-bottom"
+                       style="background-color: #ffffff !important; opacity: 1 !important; z-index: 10000000 !important; display: block !important;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div style="color: #2d3748 !important; font-weight: 600;">
+                                <i class="fas ${item.icon || 'fa-seedling'} ${item.type === 'ai-suggestion' ? 'text-primary' : 'text-success'} me-2"></i>
+                                ${item.text}
+                            </div>
+                            ${item.subtext ? `
+                                <span class="badge ${item.type === 'ai-suggestion' ? 'bg-soft-primary text-primary' : 'bg-light text-dark'} border small shadow-sm">
+                                    ${item.subtext}
+                                </span>` : ''}
+                        </div>
+                    </a>`).join('');
+            } else { 
+                suggestionsContainer.innerHTML = '<div class="list-group-item text-muted small">Walang nakitang tugma sa database.</div>';
+            }
+        } catch (err) { console.error("Search error:", err); }
+    };
+
+    const debouncedSearch = debounce((e) => performSearch(e.target.value.trim()));
+    searchInput.addEventListener('input', debouncedSearch);
+
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+            suggestionsContainer.innerHTML = '';
+            suggestionsContainer.style.display = 'none';
+        }
+    });
+});
+</script>
+
 <style>
-  .stats-card:hover { transform: translateY(-5px); transition: 0.3s; }
-  .product-card { transition: 0.3s ease; }
-  .product-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important; }
-  .badge { font-weight: 600; }
-  .table thead th { border-top: none; }
-  .italic { font-style: italic; }
+  .rounded-4 { border-radius: 15px !important; }
+  .stats-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important; transition: 0.3s; }
+  .bg-soft-primary { background-color: #e0e7ff; } 
+  #search-suggestions {
+    background-color: #ffffff !important;
+    border: 1px solid rgba(40, 167, 69, 0.2) !important;
+    border-radius: 0 0 15px 15px !important;
+  }
+  .list-group-item-action:hover {
+    background-color: #e8f5e9 !important;
+    color: #2e7d32 !important;
+  }
 </style>
 {% endblock %}

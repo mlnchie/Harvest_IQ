@@ -2,69 +2,43 @@
 {% block title %}Tahanan{% endblock %}
 {% block content %}
 
-<!-- HERO SECTION -->
 <section class="hero-section position-relative overflow-hidden bg-light">
   <div class="container py-5">
     <div class="row align-items-center min-vh-50 py-4">
-
       <div class="col-lg-6">
-
         <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill mb-3 fs-6">
           🌱 Makabagong Teknolohiya para sa Magsasakang Pilipino
         </span>
-
         <h1 class="display-5 fw-bold mb-3">
           Harvest<span class="text-success">IQ</span><br/>
           <span class="text-success">
             Smart Farm Marketplace System
           </span>
         </h1>
-
         <p class="text-muted mb-4">
           Isang web-based marketplace na may integrated weighing system
           upang direktang maikonekta ang mga magsasaka at mamimili
           gamit ang IoT at AI technology.
         </p>
-
         <div class="d-flex gap-2">
-          <a href="{{ url_for('auth.register') }}"
-             class="btn btn-success">
-             Magsimula Ngayon
-          </a>
-
-          <a href="#about"
-             class="btn btn-outline-success">
-             Alamin Pa
-          </a>
+          <a href="{{ url_for('auth.register') }}" class="btn btn-success">Magsimula Ngayon</a>
+          <a href="#about" class="btn btn-outline-success">Alamin Pa</a>
         </div>
-
       </div>
-
       <div class="col-lg-6 text-center d-none d-lg-block">
-        <div style="font-size:4rem;">
-          🌾📡⚖️
-        </div>
+        <div style="font-size:4rem;">🌾📡⚖️</div>
       </div>
-
     </div>
   </div>
 </section>
 
-
-
-<!-- ABOUT US -->
 <section id="about" class="py-5">
   <div class="container">
-
     <div class="text-center mb-5">
       <h2 class="fw-bold">Tungkol sa HarvestIQ</h2>
-      <p class="text-muted">
-        Digital na solusyon para sa agrikultura.
-      </p>
+      <p class="text-muted">Digital na solusyon para sa agrikultura.</p>
     </div>
-
     <div class="row align-items-center">
-
       <div class="col-md-6">
         <p>
           Ang <strong>HarvestIQ</strong> ay isang makabagong sistema
@@ -72,54 +46,37 @@
           na direktang maibenta ang kanilang produkto sa mga mamimili
           gamit ang teknolohiya.
         </p>
-
         <p>
           Gumagamit ito ng <strong>IoT-based weighing system</strong>
           kung saan awtomatikong naitatala ang bigat ng produkto
           gamit ang S-Type Load Cell at ESP32 device.
         </p>
-
         <p>
           Matapos ang pagtitimbang, ang datos ay ipinapadala
           sa admin para sa beripikasyon bago ito maging available
           sa buyer dashboard.
         </p>
-
         <p>
           Layunin ng sistemang ito na alisin ang middleman,
           pataasin ang kita ng magsasaka, at gawing transparent
           ang proseso ng bentahan.
         </p>
       </div>
-
       <div class="col-md-6 text-center">
         <div class="bg-light p-5 rounded shadow-sm">
           <div style="font-size:3rem;">⚖️📊📡</div>
-          <h5 class="mt-3 fw-bold">
-            Smart Weighing Technology
-          </h5>
-          <p class="text-muted small">
-            Real-time weight logging at admin verification system.
-          </p>
+          <h5 class="mt-3 fw-bold">Smart Weighing Technology</h5>
+          <p class="text-muted small">Real-time weight logging at admin verification system.</p>
         </div>
       </div>
-
     </div>
   </div>
 </section>
 
-
-
-<!-- SYSTEM FEATURES -->
 <section class="bg-light py-5">
   <div class="container">
-
-    <h2 class="text-center fw-bold mb-5">
-      Mga Tampok ng Sistema
-    </h2>
-
+    <h2 class="text-center fw-bold mb-5">Mga Tampok ng Sistema</h2>
     <div class="row g-4 text-center">
-
       <div class="col-md-4">
         <div class="p-4 shadow-sm bg-white rounded">
           <div class="fs-2 mb-3">⚖️</div>
@@ -130,7 +87,6 @@
           </p>
         </div>
       </div>
-
       <div class="col-md-4">
         <div class="p-4 shadow-sm bg-white rounded">
           <div class="fs-2 mb-3">🛠</div>
@@ -141,7 +97,6 @@
           </p>
         </div>
       </div>
-
       <div class="col-md-4">
         <div class="p-4 shadow-sm bg-white rounded">
           <div class="fs-2 mb-3">🔎</div>
@@ -152,92 +107,70 @@
           </p>
         </div>
       </div>
-
     </div>
   </div>
 </section>
 
+<section class="py-5 bg-white">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <h2 class="fw-bold mb-1">Live Harvest Inventory</h2>
+        <p class="text-muted mb-0">Real-time supply distribution aggregated from Region 3 smart scales.</p>
+      </div>
+      <a href="{{ url_for('products.list_products') }}" class="btn btn-success btn-sm rounded-pill px-4 shadow-sm">Tingnan Lahat</a>
+    </div>
 
+    
 
-<!-- BAKIT HARVEST IQ -->
+    <div class="row g-4">
+      {% for product in products[:4] %}
+      <div class="col-sm-6 col-md-4 col-lg-3">
+        {% include 'products/_card.html' %}
+      </div>
+      {% else %}
+      <div class="col-12 text-center py-5">
+        <p class="text-muted">Kasalukuyang nag-uupdate ng data mula sa mga IoT nodes sa Pampanga...</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
 <section class="bg-light py-5 my-5">
   <div class="container">
-
-    <h2 class="text-center fw-bold mb-5">
-      Bakit Piliin ang Harvest IQ?
-    </h2>
-
+    <h2 class="text-center fw-bold mb-5">Bakit Piliin ang Harvest IQ?</h2>
     <div class="row g-4 text-center">
-
       <div class="col-md-3">
         <div class="p-3">
           <div class="feature-icon mb-3 fs-2">🌿</div>
           <h5>100% Sariwa</h5>
-          <p class="text-muted small">
-            Direktang galing sa bukid,
-            walang middleman o patong na presyo.
-          </p>
+          <p class="text-muted small">Direktang galing sa bukid, walang middleman o patong na presyo.</p>
         </div>
       </div>
-
       <div class="col-md-3">
         <div class="p-3">
           <div class="feature-icon mb-3 fs-2">💰</div>
           <h5>Patas na Presyo</h5>
-          <p class="text-muted small">
-            Ang magsasaka ang nagtatakda ng presyo.
-            Makatarungan para sa lahat.
-          </p>
+          <p class="text-muted small">Ang magsasaka ang nagtatakda ng presyo. Makatarungan para sa lahat.</p>
         </div>
       </div>
-
       <div class="col-md-3">
         <div class="p-3">
           <div class="feature-icon mb-3 fs-2">🚚</div>
           <h5>Mabilis na Delivery</h5>
-          <p class="text-muted small">
-            Mula bukid hanggang hapag-kainan
-            sa loob ng 1–3 araw.
-          </p>
+          <p class="text-muted small">Mula bukid hanggang hapag-kainan sa loob ng 1–3 araw.</p>
         </div>
       </div>
-
       <div class="col-md-3">
         <div class="p-3">
           <div class="feature-icon mb-3 fs-2">🛡️</div>
           <h5>Ligtas na Bayaran</h5>
-          <p class="text-muted small">
-            Cash on Delivery, GCash, Maya,
-            at iba pang secure na paraan.
-          </p>
+          <p class="text-muted small">Cash on Delivery, GCash, Maya, at iba pang secure na paraan.</p>
         </div>
       </div>
-
     </div>
   </div>
 </section>
 
-
-{#
-<!-- CALL TO ACTION -->
-<section class="py-5 text-center">
-  <div class="container">
-
-    <h2 class="fw-bold mb-3">
-      Sumali sa HarvestIQ Marketplace
-    </h2>
-
-    <p class="text-muted mb-4">
-      Para sa mga magsasaka at mamimili na nais ng
-      mas makabagong sistema ng bentahan.
-    </p>
-
-    <a href="{{ url_for('auth.register') }}"
-       class="btn btn-success btn-lg">
-       Gumawa ng Account
-    </a>
-
-  </div>
-</section>
-#}
 {% endblock %}
