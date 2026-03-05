@@ -34,7 +34,7 @@
                             <div style="width: 80px;">
                                 <input type="number" name="qty_{{ item.product.id }}" value="{{ item.quantity }}" 
                                        class="form-control form-control-sm text-center" 
-                                       min="1" max="{{ item.product.stock_quantity }}">
+                                       min="0.1" step="0.01" max="{{ item.product.stock_quantity }}">
                             </div>
                             
                             <div class="fw-bold text-success text-end" style="width: 90px;">
@@ -97,8 +97,8 @@
                     <form action="{{ url_for('orders.checkout') }}" method="POST">
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Delivery Address</label>
-                            <textarea class="form-control" name="address" rows="2" 
-                                      placeholder="Where should we deliver?" required>{{ current_user.address or '' }}</textarea>
+                            <textarea class="form-control" name="shipping_address" rows="2" 
+                                      placeholder="Where should we deliver?" required>{{ auto_address }}</textarea>
                         </div>
 
                         <div class="mb-3">
