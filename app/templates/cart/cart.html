@@ -97,8 +97,11 @@
                     <form action="{{ url_for('orders.checkout') }}" method="POST">
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Delivery Address</label>
-                            <textarea class="form-control" name="shipping_address" rows="2" 
+                            <textarea class="form-control" name="shipping_address" rows="3" 
                                       placeholder="Where should we deliver?" required>{{ auto_address }}</textarea>
+                            <small class="text-muted" style="font-size: 0.75rem;">
+                                Base sa iyong profile sa Angeles City.
+                            </small>
                         </div>
 
                         <div class="mb-3">

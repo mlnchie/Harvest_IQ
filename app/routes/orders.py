@@ -23,13 +23,11 @@ def checkout():
     for product_id, quantity in cart.items():
         product = Product.query.get(int(product_id))
         if product:
-            qty_float = float(quantity) # 🚨 INAYOS: Para sa decimal quantity
+            qty_float = float(quantity) # 🚨 Para sa decimal quantity
             total += product.price * qty_float
             checkout_items.append({'product': product, 'quantity': qty_float})
 
     if request.method == 'POST':
-        # Sa cart.py 'shipping_address' ang hinahanap pero sa form mo sa cart.html 'address' ang name. 
-        # Gagamitin natin ang dalawa para safe
         shipping_address = request.form.get('address') or request.form.get('shipping_address')
         payment_method = request.form.get('payment_method', 'cod')
 
@@ -40,7 +38,7 @@ def checkout():
         items_to_create = []
         for product_id, quantity in cart.items():
             p = Product.query.get(int(product_id))
-            qty_float = float(quantity) # 🚨 INAYOS: Float casting
+            qty_float = float(quantity)
             if p and p.stock_quantity >= qty_float:
                 items_to_create.append((p, qty_float))
             else:
@@ -74,6 +72,7 @@ def checkout():
         flash("Order placed! Waiting for Admin verification.", "success")
         return redirect(url_for('orders.my_orders'))
 
+    # Auto-fill address logic para sa Angeles City context
     auto_address = ""
     if hasattr(current_user, 'full_address') and current_user.full_address:
         auto_address = current_user.full_address
@@ -101,10 +100,7 @@ def my_orders():
 @orders_bp.route('/<int:order_id>')
 @login_required
 def order_detail(order_id):
-    """Pinapakita ang breakdown ng items at real-time status."""
     order = Order.query.get_or_404(order_id)
-    
-    # Security: Buyer, Admin, o ang Farmer lang ang makakakita
     is_owner = order.buyer_id == current_user.id
     is_admin = current_user.role == 'admin'
     
@@ -125,10 +121,8 @@ def cancel_order(order_id):
         flash('Unauthorized.', 'danger')
         return redirect(url_for('users.dashboard'))
         
-    # Pwede lang mag-cancel kung hindi pa nabe-verify ni Admin
     if order.status == 'pending_admin':
         order.status = 'cancelled'
-        # Ibalik ang stock quantity sa farmer
         for item in order.items:
             item.product.stock_quantity += item.quantity
         db.session.commit()
@@ -139,12 +133,11 @@ def cancel_order(order_id):
     return redirect(url_for('orders.order_detail', order_id=order_id))
 
 # ============================================================
-# 🚜 5. UPDATE STATUS (Logistics Action)
+# 🚜 5. UPDATE STATUS (Logistics/Admin Action)
 # ============================================================
 @orders_bp.route('/update-status/<int:order_id>/<string:status>', methods=['POST'])
 @login_required
 def update_order_status(order_id, status):
-    """Admin o Farmer ang nagpapatakbo nito (pending -> processing -> shipped -> completed)."""
     if current_user.role not in ['admin', 'farmer']:
         flash("Unauthorized.", "danger")
         return redirect(url_for('main.index'))
@@ -154,4 +147,32 @@ def update_order_status(order_id, status):
     db.session.commit()
     
     flash(f"Order #{order.id} status updated to {status.replace('_', ' ').title()}.", "success")
+    return redirect(request.referrer or url_for('users.dashboard'))
+
+# ============================================================
+# ✅ 6. CONFIRM RECEIVED (Buyer Action - THE FIX)
+# ============================================================
+@orders_bp.route('/confirm-received/<int:order_id>', methods=['POST'])
+@login_required
+def confirm_received(order_id):
+    """Pinapayagan ang Buyer na i-mark ang order bilang 'completed'."""
+    order = Order.query.get_or_404(order_id)
+    
+    # 🛡️ Siguraduhin na ang Buyer ng order ang nag-click
+    if order.buyer_id != current_user.id:
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for('users.dashboard'))
+    
+    # Pwede lang i-confirm kung ang status ay 'shipped' na
+    if order.status == 'shipped':
+        order.status = 'completed'
+        try:
+            db.session.commit()
+            flash("Order marked as received. Thank you for using HarvestIQ!", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash("Error updating order status.", "danger")
+    else:
+        flash("Order is not yet shipped.", "warning")
+            
     return redirect(request.referrer or url_for('users.dashboard'))

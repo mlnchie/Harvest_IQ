@@ -104,14 +104,14 @@
             {% if order.status == 'completed' %}bg-success
             {% elif order.status == 'shipped' %}bg-primary
             {% else %}bg-warning text-dark{% endif %}">
-            {{ order.status|title }}
+            {{ order.status|replace('_', ' ')|title }}
           </span>
         </td>
         <td class="text-center pe-4">
-          {% if order.status == 'pending' or order.status == 'processing' %}
+          {% if order.status == 'pending' or order.status == 'processing' or order.status == 'pending_admin' %}
             <small class="text-muted fst-italic">Preparing...</small>
           {% elif order.status == 'shipped' %}
-            <form action="{{ url_for('admin.update_order_status', order_id=order.id, status='completed') }}" method="POST">
+            <form action="{{ url_for('orders.confirm_received', order_id=order.id) }}" method="POST">
               <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm">Received</button>
             </form>
           {% elif order.status == 'completed' %}
@@ -188,25 +188,20 @@
       </div>
       <div class="modal-body p-0">
         <div class="tab-content">
-          
           <div class="tab-pane fade show active" id="tab-all" role="tabpanel">
             {{ render_order_table(orders) }}
           </div>
-          
           <div class="tab-pane fade" id="tab-pending" role="tabpanel">
-            {% set pending_orders = orders|selectattr('status', 'equalto', 'pending')|list %}
+            {% set pending_orders = orders|selectattr('status', 'equalto', 'pending_admin')|list %}
             {% set processing_orders = orders|selectattr('status', 'equalto', 'processing')|list %}
             {{ render_order_table(pending_orders + processing_orders) }}
           </div>
-          
           <div class="tab-pane fade" id="tab-shipped" role="tabpanel">
             {{ render_order_table(orders|selectattr('status', 'equalto', 'shipped')|list) }}
           </div>
-          
           <div class="tab-pane fade" id="tab-completed" role="tabpanel">
             {{ render_order_table(orders|selectattr('status', 'equalto', 'completed')|list) }}
           </div>
-          
         </div>
       </div>
     </div>
@@ -226,7 +221,6 @@ document.querySelectorAll('.order-tab').forEach(tab => {
   });
 });
 
-// DEBOUNCE FUNCTION (Para sa Search)
 function debounce(func, timeout = 500) {
   let timer;
   return (...args) => {

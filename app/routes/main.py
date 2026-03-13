@@ -7,7 +7,8 @@ from app.models.search_log import SearchLog
 from app import db
 from datetime import datetime, timezone
 from flask_login import login_required, current_user
-from openai import OpenAI 
+from openai import OpenAI
+from dotenv import load_dotenv
 import os
 
 # 1. Blueprint Definition
@@ -15,7 +16,8 @@ main_bp = Blueprint('main', __name__)
 
 # 🚨 OPENAI CLIENT INITIALIZATION
 # 💡 PAALALA: I-paste dito ang iyong Secret Key (sk-...)
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+load_dotenv()
+client = OpenAI(api_key = os.environ.get("OPENAI_API_KEY"))
 
 # 🟢 ULTIMATE TRANSLATION MAP (Hybrid AI Fallback & Recipe Engine)
 # Naglalaman ito ng komprehensibong listahan ng mga gulay, prutas, at seafood sa Pilipinas.
@@ -23,10 +25,56 @@ TRANSLATION_MAP = {
     # ─── RECIPES & DISHES ───
     "torta": ["talong", "eggplant", "itlog", "egg", "sibuyas", "onion", "bawang", "garlic", "mantika", "oil"],
     "tortang talong": ["talong", "eggplant", "itlog", "egg", "sibuyas", "onion", "bawang", "garlic", "mantika", "oil"],
-    "sinigang": ["baboy", "pork", "kangkong", "water spinach", "tamarind", "sampaloc", "kamatis", "tomato", "gabi", "taro", "labanos", "radish"],
+    "sinigang": ["baboy", "pork", "kangkong", "water spinach", "tamarind", "sampaloc", "kamatis", "tomato", "gabi", "taro", "labanos", "radish", "sili", "chili", "luya", "ginger", "pork belly"],
     "adobo": ["baboy", "pork", "manok", "chicken", "bawang", "garlic", "toyo", "soy sauce", "suka", "vinegar", "mantika", "oil", "paminta", "peppercorn"],
     "pinakbet": ["kalabasa", "squash", "sitaw", "yard-long bean", "talong", "eggplant", "ampalaya", "bitter melon", "okra", "bagoong"],
-    
+    "ginisang_monggo": ["monggo", "mung beans", "dahon ng ampalaya", "bitter melon leaves", "tinapa", "smoked fish", "chicharon", "pork cracklings", "bawang", "garlic", "sibuyas", "onion", "kamatis", "tomato"],
+    "bulanglang": ["kalabasa", "squash", "talong", "eggplant", "sitaw", "string beans", "okra", "okra", "dahon ng malunggay", "moringa leaves", "luya", "ginger", "hugas bigas", "rice wash"],
+    "tinola": ["manok", "chicken", "sayote", "chayote", "dahon ng sili", "chili leaves", "luya", "ginger", "bawang", "garlic", "sibuyas", "onion", "patis", "fish sauce"],
+    "ginataang_kalabasa": ["kalabasa", "squash", "sitaw", "string beans", "gata", "coconut milk", "hipon", "shrimp", "bawang", "garlic", "sibuyas", "onion", "luya", "ginger"],
+    "adobong_sitaw": ["sitaw", "string beans", "baboy", "pork", "toyo", "soy sauce", "suka", "vinegar", "bawang", "garlic", "paminta", "black pepper"],
+    "tinola": ["manok", "chicken", "sayote", "chayote", "dahon ng sili", "chili leaves", "luya", "ginger", "bawang", "garlic", "sibuyas", "onion", "patis", "fish sauce"],
+    "chopsuey": ["repolyo", "cabbage", "karots", "carrots", "baguio beans", "green beans", "siling lara", "bell pepper", "cauliflower", "cauliflower", "atay ng manok", "chicken liver", "itlog ng pugo", "quail eggs"],
+    "dinengdeng": ["saluyot", "jute leaves", "labong", "bamboo shoots", "sigarilyas", "winged beans", "kalabasa", "squash", "bagoong monamon", "fermented fish", "isda", "grilled fish"],
+    "laing": ["dahon ng gabi", "taro leaves", "gata", "coconut milk", "siling labuyo", "bird's eye chili", "bawang", "garlic", "luya", "ginger", "baboy", "pork", "bagoong", "shrimp paste"],
+    "lumpiang_sariwa": ["ubod", "heart of palm", "karots", "carrots", "baguio beans", "green beans", "singkamas", "jicama", "mani", "peanuts", "bawang", "garlic", "itlog", "egg", "repolyo", "cabbage"],
+    "ginisang_sayote": ["sayote", "chayote", "hipon", "shrimp", "baboy", "pork", "bawang", "garlic", "sibuyas", "onion", "kamatis", "tomato", "paminta", "black pepper"],
+    "pinangat": ["gabi", "taro", "isda", "fish", "gata", "coconut milk", "siling labuyo", "bird's eye chili", "luya", "ginger", "kamias", "bilimbi"],
+    "ginisang_pechay": ["pechay", "bok choy", "baboy", "pork", "bawang", "garlic", "sibuyas", "onion", "toyo", "soy sauce", "patis", "fish sauce"],
+    "pancit_bihon": ["bihon", "rice noodles", "repolyo", "cabbage", "karots", "carrots", "baguio beans", "green beans", "atay ng manok", "chicken liver", "bawang", "garlic", "sibuyas", "onion", "kalamansi", "calamansi"],
+    "ginisang_ampalaya": ["ampalaya", "bitter melon", "itlog", "egg", "bawang", "garlic", "sibuyas", "onion", "kamatis", "tomato", "hipon", "shrimp", "asin", "salt"],
+    "bulalo": ["bakaka ng baka", "beef shank", "mais", "corn", "pechay", "bok choy", "baguio beans", "green beans", "labanos", "radish", "pamintang buo", "peppercorns", "sibuyas", "onion"],
+    "paksiw_na_isda": ["isda", "fish", "suka", "vinegar", "luya", "ginger", "bawang", "garlic", "siling haba", "green chili", "talong", "eggplant", "ampalaya", "bitter melon"],
+    "dinuguan": ["laman loob", "pork offal", "dugo ng baboy", "pork blood", "siling haba", "green chili", "suka", "vinegar", "bawang", "garlic", "sibuyas", "onion"],
+    "kaldereta": ["baka", "beef", "patatas", "potato", "karots", "carrot", "siling lara", "bell pepper", "cheese", "cheese", "liver spread", "liver spread", "kamatis", "tomato sauce"],
+    "menudo": ["baboy", "pork", "atay ng baboy", "pork liver", "patatas", "potato", "karots", "carrot", "siling lara", "bell pepper", "pasas", "raisins", "kamatis", "tomato sauce"],
+    "pork_steak": ["baboy", "pork", "sibuyas", "onion", "toyo", "soy sauce", "kalamansi", "calamansi", "bawang", "garlic", "paminta", "black pepper"],
+    "ginisang_repolyo": ["repolyo", "cabbage", "baboy", "pork", "karots", "carrot", "bawang", "garlic", "sibuyas", "onion", "patis", "fish sauce"],
+    "munggo_with_chicharon": ["monggo", "mung beans", "dahon ng ampalaya", "bitter melon leaves", "chicharon", "pork cracklings", "bawang", "garlic", "sibuyas", "onion", "kamatis", "tomato"],
+    "tortang_talong": ["talong", "eggplant", "itlog", "egg", "asin", "salt", "paminta", "black pepper", "mantika", "oil"],
+    "ginisang_ampalaya_with_egg": ["ampalaya", "bitter melon", "itlog", "egg", "bawang", "garlic", "sibuyas", "onion", "kamatis", "tomato"],
+    "ginisang_baguio_beans": ["baguio beans", "green beans", "baboy", "pork", "bawang", "garlic", "sibuyas", "onion", "kamatis", "tomato"],
+    "pesang_isda": ["isda", "fish", "petchay", "bok choy", "repolyo", "cabbage", "luya", "ginger", "sibuyas", "onion", "pamintang buo", "peppercorns", "patis", "fish sauce"],
+    "gising_gising": ["sigarilyas", "winged beans", "baguio beans", "green beans", "gata", "coconut milk", "siling labuyo", "bird's eye chili", "baboy", "pork", "bagoong alamang", "shrimp paste"],
+    "poqui_poqui": ["talong", "eggplant", "itlog", "egg", "kamatis", "tomato", "bawang", "garlic", "sibuyas", "onion"],
+    "ginisang_kalabasa": ["kalabasa", "squash", "sitaw", "string beans", "hipon", "shrimp", "bawang", "garlic", "sibuyas", "onion", "patis", "fish sauce"],
+    "adobong_pusit": ["pusit", "squid", "toyo", "soy sauce", "suka", "vinegar", "sibuyas", "onion", "bawang", "garlic", "luya", "ginger", "siling haba", "green chili"],
+    "sinampalukang_manok": ["manok", "chicken", "dahon ng sampalok", "tamarind leaves", "sinigang mix", "tamarind powder", "siling haba", "green chili", "luya", "ginger", "sibuyas", "onion"],
+    "pancit_canton": ["canton noodles", "egg noodles", "karots", "carrot", "repolyo", "cabbage", "baguio beans", "green beans", "kikiem", "fish balls", "bawang", "garlic", "sibuyas", "onion"],
+    "embutido": ["giniling na baboy", "ground pork", "karots", "carrot", "pasas", "raisins", "itlog", "egg", "cheese", "cheese", "pimiento", "bell pepper"],
+    "afritada": ["manok", "chicken", "patatas", "potato", "karots", "carrot", "siling lara", "bell pepper", "kamatis", "tomato sauce", "gisantes", "green peas"],
+    "binagoongan": ["baboy", "pork", "bagoong alamang", "shrimp paste", "talong", "eggplant", "siling labuyo", "bird's eye chili", "bawang", "garlic", "sibuyas", "onion"],
+    "suwam_na_mais": ["mais", "corn", "dahon ng sili", "chili leaves", "dahon ng malunggay", "moringa leaves", "baboy", "pork", "hipon", "shrimp", "luya", "ginger", "bawang", "garlic"],
+    "ginisang_sayote_with_itlog": ["sayote", "chayote", "itlog", "egg", "bawang", "garlic", "sibuyas", "onion", "kamatis", "tomato", "asin", "salt"],
+    "pangat_na_isda": ["isda", "fish", "kamias", "bilimbi", "kamatis", "tomato", "sibuyas", "onion", "siling haba", "green chili", "asin", "salt"],
+    "ginisang_mustasa": ["mustasa", "mustard greens", "itlog", "egg", "kamatis", "tomato", "bawang", "garlic", "sibuyas", "onion", "patis", "fish sauce"],
+    "ginataang_langka": ["langka", "jackfruit", "gata", "coconut milk", "dilis", "anchovies", "baboy", "pork", "siling labuyo", "bird's eye chili", "bawang", "garlic"],
+    "sinigang_na_hipon": ["hipon", "shrimp", "sampalok", "tamarind", "kangkong", "water spinach", "sitaw", "string beans", "talong", "eggplant", "labanos", "radish", "siling haba", "green chili"],
+    "adobong_puso_ng_saging": ["puso ng saging", "banana blossom", "suka", "vinegar", "toyo", "soy sauce", "bawang", "garlic", "sibuyas", "onion", "baboy", "pork"],
+    "ginisang_togue": ["togue", "mung bean sprouts", "tokwa", "tofu", "karots", "carrot", "baguio beans", "green beans", "hipon", "shrimp", "bawang", "garlic", "sibuyas", "onion"],
+    "nilagang_baka": ["baka", "beef", "repolyo", "cabbage", "petchay", "bok choy", "saging na saba", "cooking banana", "patatas", "potato", "sibuyas", "onion", "pamintang buo", "peppercorns"],
+    "ginataang_gabi": ["dahon ng gabi", "taro leaves", "gabi", "taro root", "gata", "coconut milk", "hipon", "shrimp", "luya", "ginger", "bawang", "garlic", "siling labuyo", "bird's eye chili"],
+
     # ─── THE BAHAY KUBO CLASSICS & VEGGIES ───
     "singkamas": ["singkamas", "jicama", "yam bean"], "jicama": ["singkamas", "jicama"],
     "sigarilyas": ["sigarilyas", "winged bean"], "winged bean": ["sigarilyas", "winged bean"],
@@ -96,7 +144,7 @@ TRANSLATION_MAP = {
 
     # ─── SEAFOODS ───
     "bangus": ["bangus", "milkfish"], "milkfish": ["bangus", "milkfish"],
-    "tilapia": ["tilapia"],
+    "tilapia": ["tilapia", "fish", "isda"],
     "galunggong": ["galunggong", "round scad"],
     "tangigue": ["tangigue", "spanish mackerel"],
     "lapu-lapu": ["lapu-lapu", "grouper"], "grouper": ["lapu-lapu", "grouper"],
@@ -121,6 +169,8 @@ TRANSLATION_MAP = {
     "bagoong": ["bagoong", "alamang", "bagoong isda", "fermented shrimp paste"],
     "patis": ["patis", "fish sauce"],
     "burong isda": ["burong isda", "fermented fish with rice", "buro"],
+    "isda": ["bangus", "tilapia", "lapu-lapu", "galunggong"],
+    "fish": ["tilapia", "bangus", "isda", "lapu-lapu", "galunggong", "tuyo", "dalagang bukid"],
 
     # ─── CONDIMENTS & SEASONINGS ───
     "mantika": ["mantika", "oil", "cooking oil"],

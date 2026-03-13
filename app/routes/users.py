@@ -7,7 +7,7 @@ from app import db
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 
-# 🛠️ HARDWARE SYNC
+# 🛠️ HARDWARE SYNC (IoT Device Integration)
 try:
     from app.models.device import Device
 except Exception:
@@ -22,17 +22,19 @@ users_bp = Blueprint("users", __name__)
 @login_required
 def dashboard():
     cart_count = len(session.get('cart', {}))
-    # 🛒 BUYER PREVIEW: Approved at Available items lamang ang ipapakita
+    
+    # 🛒 Marketplace Preview: Approved at Available products lamang
     marketplace_products = Product.query.filter_by(
         status="approved", 
         is_available=True
     ).order_by(Product.created_at.desc()).all()
 
+    # 1. ADMIN REDIRECT
     if current_user.role == "admin":
         return redirect(url_for("admin.dashboard"))
 
+    # 2. FARMER DASHBOARD
     if current_user.role == "farmer":
-        # 👨‍🌾 FARMER LOGIC: Nakikita LAHAT ng kaniyang items (Pending at Approved)
         farmer_inventory = Product.query.filter_by(
             farmer_id=current_user.id
         ).order_by(Product.created_at.desc()).all()
@@ -45,11 +47,11 @@ def dashboard():
             "dashboard/farmer.html",
             orders=farmer_orders,
             products=marketplace_products, 
-            farmer_products=farmer_inventory, # Loop ito sa HTML mo para sa status tracking
+            farmer_products=farmer_inventory,
             cart_count=cart_count
         )
 
-    # 🛒 BUYER DASHBOARD: 'products' variable ang ipapasa para sa marketplace
+    # 3. BUYER DASHBOARD
     buyer_orders = Order.query.filter_by(buyer_id=current_user.id).all()
     return render_template(
         "dashboard/buyer.html", 
@@ -64,16 +66,15 @@ def dashboard():
 @users_bp.route("/admin/approve-product/<int:product_id>", methods=["POST"])
 @login_required
 def admin_approve_product(product_id):
-    """Makes a pending product live for buyers."""
     if current_user.role != "admin":
         return redirect(url_for("main.index"))
     
     product = Product.query.get_or_404(product_id)
-    product.status = "approved" # State Change: Pending -> Approved
+    product.status = "approved"
     
     try:
         db.session.commit()
-        flash(f"'{product.name}' is now approved and live!", "success")
+        flash(f"'{product.name}' is now approved!", "success")
     except Exception:
         db.session.rollback()
         flash("Nagka-error sa pag-approve.", "danger")
@@ -83,7 +84,6 @@ def admin_approve_product(product_id):
 @users_bp.route("/admin/edit-price/<int:product_id>", methods=["POST"])
 @login_required
 def admin_edit_price(product_id):
-    """Admin pricing override functionality."""
     if current_user.role != "admin":
         return redirect(url_for("main.index"))
     
@@ -100,24 +100,36 @@ def admin_edit_price(product_id):
     return redirect(url_for("admin.dashboard"))
 
 # ============================================================
-# 👤 PROFILE & IOT HARDWARE SYNC
+# 👤 PROFILE UPDATE (The Reverting Address & Phone Fix)
 # ============================================================
 @users_bp.route("/profile/edit", methods=["GET", "POST"])
 @login_required
 def edit_profile():
     if request.method == "POST":
         current_user.full_name = request.form.get("full_name")
-        current_user.phone = request.form.get("phone")
+        current_user.phone = request.form.get("phone") 
         current_user.province = request.form.get("province")
-        db.session.commit()
-        flash("Profile updated successfully!", "success")
-        return redirect(url_for("users.dashboard"))
+        current_user.city = request.form.get("city")
+        current_user.barangay = request.form.get("barangay")
+        current_user.full_address = request.form.get("full_address") 
+        
+        try:
+            db.session.commit()
+            flash("Profile updated successfully!", "success")
+            return redirect(url_for("users.dashboard"))
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error: {e}")
+            flash("Nagkaroon ng error sa pag-save. Pakisubukang muli.", "danger")
+            
     return render_template("dashboard/edit_profile.html")
 
+# ============================================================
+# ⚖️ IOT WEIGHING SYNC (ESP32 Integration)
+# ============================================================
 @users_bp.route("/start-weigh", methods=["POST"])
 @login_required
 def start_weigh():
-    """IoT Weighing activation (Device ID 6)."""
     session["active_farmer_id"] = current_user.id
     if Device:
         device = Device.query.get(6)
@@ -137,4 +149,28 @@ def stop_weigh():
             device.weighing = False
             db.session.commit()
     flash("Weighing stopped.", "warning")
+    return redirect(url_for("users.dashboard"))
+
+# ============================================================
+# ✅ ADDED: CONFIRM RECEIVED (Buyer Action Fix)
+# ============================================================
+@users_bp.route("/order/confirm-received/<int:order_id>", methods=["POST"])
+@login_required
+def confirm_received(order_id):
+    """Pinapayagan ang Buyer na i-mark ang order bilang 'completed'."""
+    order = Order.query.get_or_404(order_id)
+    
+    # 🛡️ Security Check: Dapat ang Buyer ang nag-click
+    if order.buyer_id != current_user.id:
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for("users.dashboard"))
+    
+    if order.status == 'shipped':
+        order.status = 'completed'
+        try:
+            db.session.commit()
+            flash("Order marked as received. Thank you!", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash("Error updating order.", "danger")
     return redirect(url_for("users.dashboard"))
